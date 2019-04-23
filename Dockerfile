@@ -14,9 +14,11 @@ RUN npm run compile:all
 
 FROM node:6.15.1
 
-COPY --from=app /app /app
-
 WORKDIR /app
-USER node
 
 CMD ["node", "--expose-gc", "app.js"]
+
+
+COPY --from=app /app /app
+
+USER node
