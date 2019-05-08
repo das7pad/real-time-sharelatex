@@ -4,9 +4,38 @@ pipeline {
   }
   environment {
     DOCKER_COMPOSE_FLAGS = "-f docker-compose.ci.yml"
+    IMAGE_CI = "ci/real-time:$BRANCH_NAME-$BUILD_NUMBER"
   }
 
   stages {
+    stage('Prepare environment') {
+      stages {
+        stage('Pull Cache') {
+          when {
+            expression {
+              env.SHARELATEX_DOCKER_REPOS != null
+            }
+          }
+          environment {
+            IMAGE_BRANCH = "$SHARELATEX_DOCKER_REPOS/real-time:$BRANCH_NAME"
+          }
+          steps {
+            sh '''
+              docker pull $IMAGE_BRANCH \
+              && docker tag $IMAGE_BRANCH $IMAGE_CI-cache \
+              && docker rmi $IMAGE_BRANCH \
+              || true
+            '''
+            sh '''
+              docker pull $IMAGE_BRANCH-build \
+              && docker tag $IMAGE_BRANCH-build $IMAGE_CI-build-cache \
+              && docker rmi $IMAGE_BRANCH-build \
+              || true
+            '''
+          }
+        }
+      }
+    }
     stage('CI') {
       options {
         timeout(time: 30, unit: 'MINUTES')
@@ -46,13 +75,18 @@ pipeline {
             }
           }
           environment {
-            IMAGE = "${env.SHARELATEX_DOCKER_REPOS}/real-time:$BRANCH_NAME-$BUILD_NUMBER"
+            IMAGE = "$SHARELATEX_DOCKER_REPOS/real-time:$BRANCH_NAME-$BUILD_NUMBER"
+            IMAGE_BRANCH = "$SHARELATEX_DOCKER_REPOS/real-time:$BRANCH_NAME"
           }
           steps {
             script {
-              sh 'docker build -t $IMAGE .'
+              sh 'docker tag $IMAGE_CI $IMAGE'
               sh 'docker push $IMAGE'
-              sh 'docker rmi $IMAGE'
+              sh 'docker tag $IMAGE $IMAGE_BRANCH'
+              sh 'docker push $IMAGE_BRANCH'
+              sh 'docker tag $IMAGE_CI-build $IMAGE_BRANCH-build'
+              sh 'docker push $IMAGE_BRANCH-build'
+              sh 'docker rmi $IMAGE $IMAGE_BRANCH $IMAGE_BRANCH-build'
             }
           }
         }
