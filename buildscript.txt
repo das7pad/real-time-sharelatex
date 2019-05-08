@@ -5,4 +5,4 @@ real-time
 --dependencies=mongo,redis
 --docker-repos=gcr.io/overleaf-ops
 --build-target=docker
---script-version=2.0.0
+--script-version=2.1.0
