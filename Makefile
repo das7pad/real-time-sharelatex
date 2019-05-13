@@ -1,12 +1,12 @@
 # This file was auto-generated, do not edit it directly.
 # Instead run bin/update_build_scripts from
 # https://github.com/das7pad/sharelatex-dev-env
-# Version: 2.4.0
+# Version: 2.4.1
 
 BUILD_NUMBER ?= local
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT ?= $(shell git rev-parse HEAD)
-RELEASE ?= $(shell git describe --tags | sed s/-g/+/)
+RELEASE ?= $(shell git describe --tags | sed 's/-g/+/;s/^v//')
 PROJECT_NAME = real-time
 DOCKER_COMPOSE_FLAGS ?= -f docker-compose.yml
 DOCKER_COMPOSE := BUILD_NUMBER=$(BUILD_NUMBER) \
