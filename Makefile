@@ -1,10 +1,12 @@
 # This file was auto-generated, do not edit it directly.
 # Instead run bin/update_build_scripts from
 # https://github.com/das7pad/sharelatex-dev-env
-# Version: 2.1.0
+# Version: 2.4.0
 
 BUILD_NUMBER ?= local
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
+COMMIT ?= $(shell git rev-parse HEAD)
+RELEASE ?= $(shell git describe --tags | sed s/-g/+/)
 PROJECT_NAME = real-time
 DOCKER_COMPOSE_FLAGS ?= -f docker-compose.yml
 DOCKER_COMPOSE := BUILD_NUMBER=$(BUILD_NUMBER) \
@@ -52,6 +54,8 @@ build:
 		--tag gcr.io/overleaf-ops/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER) \
 		--cache-from ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-cache \
 		--cache-from ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-build \
+		--build-arg RELEASE=$(RELEASE) \
+		--build-arg COMMIT=$(COMMIT) \
 		.
 
 tar:

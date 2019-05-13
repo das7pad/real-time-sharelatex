@@ -10,6 +10,11 @@ pipeline {
   stages {
     stage('Prepare environment') {
       stages {
+        stage('Clean Previous artifacts') {
+          steps {
+            sh 'git clean -xdf'
+          }
+        }
         stage('Pull Cache') {
           when {
             expression {
@@ -25,18 +30,18 @@ pipeline {
               docker pull $IMAGE_BRANCH \
               && docker tag $IMAGE_BRANCH $IMAGE_CI-cache \
               && docker rmi $IMAGE_BRANCH \
-              || docker pull $IMAGE_BRANCH_DEV \
+              || (docker pull $IMAGE_BRANCH_DEV \
               && docker tag $IMAGE_BRANCH_DEV $IMAGE_CI-cache \
-              && docker rmi $IMAGE_BRANCH_DEV \
+              && docker rmi $IMAGE_BRANCH_DEV) \
               || true
             '''
             sh '''
               docker pull $IMAGE_BRANCH-build \
               && docker tag $IMAGE_BRANCH-build $IMAGE_CI-build-cache \
               && docker rmi $IMAGE_BRANCH-build \
-              || docker pull $IMAGE_BRANCH_DEV-build \
+              || (docker pull $IMAGE_BRANCH_DEV-build \
               && docker tag $IMAGE_BRANCH_DEV-build $IMAGE_CI-build-cache \
-              && docker rmi $IMAGE_BRANCH_DEV-build \
+              && docker rmi $IMAGE_BRANCH_DEV-build) \
               || true
             '''
           }
@@ -62,9 +67,7 @@ pipeline {
 
         stage('Acceptance Tests') {
           steps {
-            script {
-              sh 'make test_acceptance'
-            }
+            sh 'make test_acceptance'
           }
         }
       }
@@ -86,15 +89,13 @@ pipeline {
             IMAGE_BRANCH = "$SHARELATEX_DOCKER_REPOS/real-time:$BRANCH_NAME"
           }
           steps {
-            script {
-              sh 'docker tag $IMAGE_CI $IMAGE'
-              sh 'docker push $IMAGE'
-              sh 'docker tag $IMAGE $IMAGE_BRANCH'
-              sh 'docker push $IMAGE_BRANCH'
-              sh 'docker tag $IMAGE_CI-build $IMAGE_BRANCH-build'
-              sh 'docker push $IMAGE_BRANCH-build'
-              sh 'docker rmi $IMAGE $IMAGE_BRANCH $IMAGE_BRANCH-build'
-            }
+            sh 'docker tag $IMAGE_CI $IMAGE'
+            sh 'docker push $IMAGE'
+            sh 'docker tag $IMAGE $IMAGE_BRANCH'
+            sh 'docker push $IMAGE_BRANCH'
+            sh 'docker tag $IMAGE_CI-build $IMAGE_BRANCH-build'
+            sh 'docker push $IMAGE_BRANCH-build'
+            sh 'docker rmi $IMAGE $IMAGE_BRANCH $IMAGE_BRANCH-build'
           }
         }
       }
@@ -102,7 +103,7 @@ pipeline {
   }
 
   post {
-    always {
+    cleanup {
       sh 'make test_clean'
       sh 'make clean'
     }

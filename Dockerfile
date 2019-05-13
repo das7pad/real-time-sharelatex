@@ -23,3 +23,9 @@ WORKDIR /app
 COPY --from=app /app /app
 
 USER node
+
+ARG RELEASE
+ARG COMMIT
+ENV RELEASE=${RELEASE} \
+    SENTRY_RELEASE=${RELEASE} \
+    COMMIT=${COMMIT}
