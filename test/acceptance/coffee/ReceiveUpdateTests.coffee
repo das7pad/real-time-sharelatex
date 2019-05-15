@@ -10,7 +10,7 @@ async = require "async"
 
 settings = require "settings-sharelatex"
 redis = require "redis-sharelatex"
-rclient = redis.createClient(settings.redis.websessions)
+rclient = redis.createClient(settings.redis.documentupdater)
 
 describe "receiveUpdate", ->
 	before (done) ->
