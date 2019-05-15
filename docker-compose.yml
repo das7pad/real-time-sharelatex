@@ -1,7 +1,7 @@
 # This file was auto-generated, do not edit it directly.
 # Instead run bin/update_build_scripts from
 # https://github.com/das7pad/sharelatex-dev-env
-# Version: 2.4.1
+# Version: 3.0.0
 
 version: "3.1"
 
@@ -22,15 +22,15 @@ services:
       - .:/app
     working_dir: /app
     environment:
-      ELASTIC_SEARCH_DSN: es:9200
-      REDIS_HOST: redis
-      MONGO_HOST: mongo
-      POSTGRES_HOST: postgres
+      DOC_UPDATER_REDIS_HOST: redis_documentupdater
+      REAL_TIME_REDIS_HOST: redis_realtime
+      WEB_SESSIONS_REDIS_HOST: redis_websessions
       MOCHA_GREP: ${MOCHA_GREP}
     user: node
     depends_on:
-      - mongo
-      - redis
+      - redis_documentupdater
+      - redis_realtime
+      - redis_websessions
     command: npm run test:acceptance
 
 
@@ -43,9 +43,11 @@ services:
     command: tar -czf /tmp/build/build.tar.gz --exclude=build.tar.gz --exclude-vcs .
     user: root
 
-  redis:
+  redis_documentupdater:
+    image: redis
+  redis_realtime:
+    image: redis
+  redis_websessions:
     image: redis
 
-  mongo:
-    image: mongo:3.4
 

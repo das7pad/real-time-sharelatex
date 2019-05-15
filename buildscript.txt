@@ -2,7 +2,7 @@ real-time
 --language=coffeescript
 --node-version=10.15.3
 --acceptance-creds=None
---dependencies=mongo,redis
+--dependencies=redis_documentupdater,redis_realtime,redis_websessions
 --docker-repos=gcr.io/overleaf-ops
 --build-target=docker
---script-version=2.4.1
+--script-version=3.0.0
