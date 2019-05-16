@@ -1,7 +1,7 @@
 # This file was auto-generated, do not edit it directly.
 # Instead run bin/update_build_scripts from
 # https://github.com/das7pad/sharelatex-dev-env
-# Version: 3.0.0
+# Version: 3.1.0
 
 BUILD_NUMBER ?= local
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
@@ -44,6 +44,10 @@ test_clean:
 
 test_acceptance_pre_run:
 	@[ ! -f test/acceptance/scripts/pre-run ] && echo "real-time has no pre acceptance tests task" || $(DOCKER_COMPOSE) run --rm test_acceptance test/acceptance/scripts/pre-run
+
+build_app:
+	npm run compile:all
+
 build:
 	docker pull node:10.15.3
 	docker build --tag ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-build \
