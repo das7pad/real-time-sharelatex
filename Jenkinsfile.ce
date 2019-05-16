@@ -69,6 +69,11 @@ pipeline {
           steps {
             sh 'make test_acceptance'
           }
+          post {
+            cleanup {
+              sh 'make clean_test_acceptance'
+            }
+          }
         }
       }
     }
