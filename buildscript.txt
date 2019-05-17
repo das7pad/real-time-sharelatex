@@ -5,4 +5,3 @@ real-time
 --dependencies=redis_documentupdater,redis_realtime,redis_websessions
 --docker-repos=gcr.io/overleaf-ops
 --build-target=docker
---script-version=3.3.0
