@@ -21,6 +21,7 @@ services:
       - .:/app
     working_dir: /app
     environment:
+      LOG_LEVEL: fatal
       DOC_UPDATER_REDIS_HOST: redis_documentupdater
       REAL_TIME_REDIS_HOST: redis_realtime
       WEB_SESSIONS_REDIS_HOST: redis_websessions
