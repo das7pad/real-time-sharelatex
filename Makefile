@@ -16,7 +16,6 @@ DOCKER_COMPOSE := BUILD_NUMBER=$(BUILD_NUMBER) \
 
 clean:
 	docker rmi \
-		node:10.16.0 \
 		ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER) \
 		ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-cache \
 		ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-build \
@@ -50,7 +49,6 @@ build_app:
 	npm run compile:all
 
 build:
-	docker pull node:10.16.0
 	docker build --tag ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-build \
 		--cache-from ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-build-cache \
 		--target app \

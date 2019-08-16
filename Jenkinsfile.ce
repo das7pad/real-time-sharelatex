@@ -9,6 +9,7 @@ pipeline {
   environment {
     DOCKER_COMPOSE_FLAGS = "-f docker-compose.ci.yml"
     IMAGE_CI = "ci/real-time:$BRANCH_NAME-$BUILD_NUMBER"
+    IMAGE_NODE = 'node:10.16.0'
   }
 
   stages {
@@ -18,6 +19,22 @@ pipeline {
           steps {
             sh 'git clean -xdf'
           }
+        }
+        stage('Pull node image') {
+            when {
+                expression {
+                    env.DOCKER_REGISTRY != null
+                }
+            }
+            steps {
+                sh 'docker pull $DOCKER_REGISTRY/$IMAGE_NODE'
+                sh 'docker tag $DOCKER_REGISTRY/$IMAGE_NODE $IMAGE_NODE'
+            }
+            post {
+                cleanup {
+                    sh 'docker rmi --force $DOCKER_REGISTRY/$IMAGE_NODE'
+                }
+            }
         }
         stage('Pull Cache') {
           when {
@@ -115,6 +132,7 @@ pipeline {
     cleanup {
       sh 'make test_clean'
       sh 'make clean'
+      sh 'docker rmi --force $IMAGE_NODE'
     }
   }
 }
