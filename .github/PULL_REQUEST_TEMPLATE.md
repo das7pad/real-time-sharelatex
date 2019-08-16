@@ -2,23 +2,13 @@
 
 ### Description
 
-
-
 #### Screenshots
-
-
 
 #### Related Issues / PRs
 
-
-
 ### Review
 
-
-
 #### Potential Impact
-
-
 
 #### Manual Testing Performed
 
@@ -27,11 +17,7 @@
 
 #### Accessibility
 
-
-
 ### Deployment
-
-
 
 #### Deployment Checklist
 
@@ -39,7 +25,5 @@
 - [ ]
 
 #### Metrics and Monitoring
-
-
 
 #### Who Needs to Know?

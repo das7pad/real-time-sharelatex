@@ -33,8 +33,6 @@ services:
       - redis_websessions
     command: npm run test:acceptance
 
-
-
   tar:
     build: .
     image: ci/$PROJECT_NAME:$BRANCH_NAME-$BUILD_NUMBER
@@ -49,5 +47,3 @@ services:
     image: redis
   redis_websessions:
     image: redis
-
-

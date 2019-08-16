@@ -14,14 +14,11 @@ COPY . /app
 
 RUN make build_app
 
-
 FROM node:10.16.3
 
 CMD ["node", "--expose-gc", "app.js"]
 
 WORKDIR /app
-
-
 
 COPY --from=app /app /app
 

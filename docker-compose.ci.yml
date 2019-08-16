@@ -10,7 +10,6 @@ services:
     user: node
     command: npm run test:unit:_run
 
-
   test_acceptance:
     build: .
     image: ci/$PROJECT_NAME:$BRANCH_NAME-$BUILD_NUMBER
@@ -27,8 +26,6 @@ services:
     user: node
     command: npm run test:acceptance:_run
 
-
-
   tar:
     build: .
     image: ci/$PROJECT_NAME:$BRANCH_NAME-$BUILD_NUMBER
@@ -43,5 +40,3 @@ services:
     image: redis
   redis_websessions:
     image: redis
-
-
