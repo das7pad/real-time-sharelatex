@@ -50,21 +50,19 @@ pipeline {
             sh '''
               docker pull $IMAGE_BRANCH \
               && docker tag $IMAGE_BRANCH $IMAGE_CI-cache \
-              && docker rmi $IMAGE_BRANCH \
               || (docker pull $IMAGE_BRANCH_DEV \
-              && docker tag $IMAGE_BRANCH_DEV $IMAGE_CI-cache \
-              && docker rmi $IMAGE_BRANCH_DEV) \
-              || true
+              && docker tag $IMAGE_BRANCH_DEV $IMAGE_CI-cache) \
+              || echo 'no app layer build cache available'
             '''
-            sh '''
-              docker pull $IMAGE_BRANCH-build \
-              && docker tag $IMAGE_BRANCH-build $IMAGE_CI-build-cache \
-              && docker rmi $IMAGE_BRANCH-build \
-              || (docker pull $IMAGE_BRANCH_DEV-build \
-              && docker tag $IMAGE_BRANCH_DEV-build $IMAGE_CI-build-cache \
-              && docker rmi $IMAGE_BRANCH_DEV-build) \
-              || true
-            '''
+          }
+          post {
+            cleanup {
+              sh '''
+                docker rmi --force \
+                  $IMAGE_BRANCH \
+                  $IMAGE_BRANCH_DEV \
+              '''
+            }
           }
         }
       }
@@ -119,9 +117,15 @@ pipeline {
             sh 'docker push $IMAGE'
             sh 'docker tag $IMAGE $IMAGE_BRANCH'
             sh 'docker push $IMAGE_BRANCH'
-            sh 'docker tag $IMAGE_CI-build $IMAGE_BRANCH-build'
-            sh 'docker push $IMAGE_BRANCH-build'
-            sh 'docker rmi $IMAGE $IMAGE_BRANCH $IMAGE_BRANCH-build'
+          }
+          post {
+            cleanup {
+              sh '''
+                docker rmi --force \
+                  $IMAGE \
+                  $IMAGE_BRANCH \
+              '''
+            }
           }
         }
       }
@@ -130,8 +134,7 @@ pipeline {
 
   post {
     cleanup {
-      sh 'make test_clean'
-      sh 'make clean'
+      sh 'make clean_ci'
       sh 'docker rmi --force $IMAGE_NODE'
     }
   }
