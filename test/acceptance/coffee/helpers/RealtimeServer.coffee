@@ -3,6 +3,8 @@ require("logger-sharelatex").logger.level("info")
 logger = require("logger-sharelatex")
 Settings = require("settings-sharelatex")
 
+request = require("request")
+
 module.exports =
 	running: false
 	initing: false
@@ -15,7 +17,7 @@ module.exports =
 		else
 			@initing = true
 			@callbacks.push callback
-			app.listen Settings.internal?.realtime?.port, "localhost", (error) => 
+			request.get "http://localhost:3026/", (error) =>
 				throw error if error?
 				@running = true
 				logger.log("clsi running in dev mode")
