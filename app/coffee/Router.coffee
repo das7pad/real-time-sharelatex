@@ -7,6 +7,8 @@ HttpApiController = require "./HttpApiController"
 Utils = require "./Utils"
 bodyParser = require "body-parser"
 
+ClientStoreManager = require "./ClientStoreManager"
+
 basicAuth = require('basic-auth-connect')
 httpAuth = basicAuth (user, pass)->
 	isValid = user == settings.internal.realTime.user and pass == settings.internal.realTime.pass
@@ -66,6 +68,8 @@ module.exports = Router =
 			else
 				user = {_id: "anonymous-user"}
 
+			ClientStoreManager.wrap(client)
+
 			client.on "joinProject", (data = {}, callback) ->
 				if data.anonymousAccessToken
 					user.anonymousAccessToken = data.anonymousAccessToken
@@ -77,9 +81,14 @@ module.exports = Router =
 
 			client.on "disconnect", () ->
 				metrics.inc('socket-io.disconnect')
+				cleanupCallback = () ->
+					ClientStoreManager.unwrap(client)
+
 				WebsocketController.leaveProject io, client, (err) ->
 					if err?
-						Router._handleError null, err, client, "leaveProject"
+						Router._handleError cleanupCallback, err, client, "leaveProject"
+					else
+						cleanupCallback()
 
 			# Variadic. The possible arguments:
 			# doc_id, callback

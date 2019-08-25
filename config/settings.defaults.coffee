@@ -46,6 +46,8 @@ settings =
 
 	continualPubsubTraffic: process.env['CONTINUAL_PUBSUB_TRAFFIC'] or false
 
+	clientStoreBackend: process.env['CLIENT_STORE_BACKEND'] or 'memory'
+
 	sentry:
 		dsn: process.env.SENTRY_DSN
 	
