@@ -22,7 +22,7 @@ module.exports = HttpController =
 
 	getConnectedClients: (req, res, next) ->
 		io = req.app.get("io")
-		ioClients = io.sockets.clients()
+		ioClients = Object.values(io.sockets.clients().connected)
 		async.map ioClients, HttpController._getConnectedClientView, (error, clients) ->
 			return next(error) if error?
 			res.json clients
