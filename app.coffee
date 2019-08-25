@@ -34,19 +34,18 @@ cookieParser = CookieParser(Settings.security.sessionSecret)
 
 sessionSockets = new SessionSockets(io, sessionStore, cookieParser, Settings.cookieName)
 
-io.configure ->
-	io.enable('browser client minification')
-	io.enable('browser client etag')
+io.set('browser client minification', true)
+io.set('browser client etag', true)
 
-	# Fix for Safari 5 error of "Error during WebSocket handshake: location mismatch"
-	# See http://answers.dotcloud.com/question/578/problem-with-websocket-over-ssl-in-safari-with
-	io.set('match origin protocol', true)
+# Fix for Safari 5 error of "Error during WebSocket handshake: location mismatch"
+# See http://answers.dotcloud.com/question/578/problem-with-websocket-over-ssl-in-safari-with
+io.set('match origin protocol', true)
 
-	# gzip uses a Node 0.8.x method of calling the gzip program which
-	# doesn't work with 0.6.x
-	#io.enable('browser client gzip')
-	io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling'])
-	io.set('log level', 1)
+# gzip uses a Node 0.8.x method of calling the gzip program which
+# doesn't work with 0.6.x
+#io.enable('browser client gzip')
+io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling'])
+io.set('log level', 1)
 
 app.get "/", (req, res, next) ->
 	res.send "real-time-sharelatex is alive"
