@@ -28,7 +28,7 @@ describe "Session", ->
 			RealTimeClient.getConnectedClients (error, clients) =>
 				included = false
 				for client in clients
-					if client.client_id == @client.socket.sessionid
+					if client.client_id == @client.id
 						included = true
 						break
 				expect(included).to.equal true

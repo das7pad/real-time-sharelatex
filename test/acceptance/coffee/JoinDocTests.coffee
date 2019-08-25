@@ -48,7 +48,7 @@ describe "joinDoc", ->
 			@returnedArgs.should.deep.equal [@lines, @version, @ops, @ranges]
 			
 		it "should have joined the doc room", (done) ->
-			RealTimeClient.getConnectedClient @client.socket.sessionid, (error, client) =>
+			RealTimeClient.getConnectedClient @client.id, (error, client) =>
 				expect(@doc_id in client.rooms).to.equal true
 				done()
 		
@@ -85,7 +85,7 @@ describe "joinDoc", ->
 			@returnedArgs.should.deep.equal [@lines, @version, @ops, @ranges]
 			
 		it "should have joined the doc room", (done) ->
-			RealTimeClient.getConnectedClient @client.socket.sessionid, (error, client) =>
+			RealTimeClient.getConnectedClient @client.id, (error, client) =>
 				expect(@doc_id in client.rooms).to.equal true
 				done()
 		
@@ -122,7 +122,7 @@ describe "joinDoc", ->
 			@returnedArgs.should.deep.equal [@lines, @version, @ops, @ranges]
 			
 		it "should have joined the doc room", (done) ->
-			RealTimeClient.getConnectedClient @client.socket.sessionid, (error, client) =>
+			RealTimeClient.getConnectedClient @client.id, (error, client) =>
 				expect(@doc_id in client.rooms).to.equal true
 				done()
 
@@ -164,7 +164,7 @@ describe "joinDoc", ->
 			@returnedArgs.should.deep.equal [@lines, @version, @ops, @ranges]
 			
 		it "should have joined the doc room", (done) ->
-			RealTimeClient.getConnectedClient @client.socket.sessionid, (error, client) =>
+			RealTimeClient.getConnectedClient @client.id, (error, client) =>
 				expect(@doc_id in client.rooms).to.equal true
 				done()
 
@@ -202,7 +202,7 @@ describe "joinDoc", ->
 			@returnedArgs.should.deep.equal [@lines, @version, @ops, @ranges]
 
 		it "should have joined the doc room", (done) ->
-			RealTimeClient.getConnectedClient @client.socket.sessionid, (error, client) =>
+			RealTimeClient.getConnectedClient @client.id, (error, client) =>
 				expect(@doc_id in client.rooms).to.equal true
 				done()
 
@@ -241,6 +241,6 @@ describe "joinDoc", ->
 			@returnedArgs.should.deep.equal [@lines, @version, @ops, @ranges]
 
 		it "should have joined the doc room", (done) ->
-			RealTimeClient.getConnectedClient @client.socket.sessionid, (error, client) =>
+			RealTimeClient.getConnectedClient @client.id, (error, client) =>
 				expect(@doc_id in client.rooms).to.equal true
 				done()

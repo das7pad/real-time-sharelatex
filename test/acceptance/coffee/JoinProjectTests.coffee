@@ -47,7 +47,7 @@ describe "joinProject", ->
 			@protocolVersion.should.equal 2
 			
 		it "should have joined the project room", (done) ->
-			RealTimeClient.getConnectedClient @client.socket.sessionid, (error, client) =>
+			RealTimeClient.getConnectedClient @client.id, (error, client) =>
 				expect(@project_id in client.rooms).to.equal true
 				done()
 				
@@ -55,7 +55,7 @@ describe "joinProject", ->
 			@client.emit "clientTracking.getConnectedUsers", (error, users) =>
 				connected = false
 				for user in users
-					if user.client_id == @client.socket.sessionid and user.user_id == @user_id
+					if user.client_id == @client.id and user.user_id == @user_id
 						connected = true
 						break
 				expect(connected).to.equal true
@@ -86,6 +86,6 @@ describe "joinProject", ->
 			@error.message.should.equal "not authorized"
 			
 		it "should not have joined the project room", (done) ->
-			RealTimeClient.getConnectedClient @client.socket.sessionid, (error, client) =>
+			RealTimeClient.getConnectedClient @client.id, (error, client) =>
 				expect(@project_id in client.rooms).to.equal false
 				done()
