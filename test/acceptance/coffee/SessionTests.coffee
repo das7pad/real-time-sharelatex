@@ -12,7 +12,8 @@ describe "Session", ->
 			}, (error) =>
 				throw error if error?
 				@client = RealTimeClient.connect()
-				done()
+				@client.on "connectionAccepted", () ->
+					done()
 		
 		it "should not get disconnected", (done) ->
 			disconnected = false
