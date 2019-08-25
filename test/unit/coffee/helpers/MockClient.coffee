@@ -12,6 +12,10 @@ module.exports = class MockClient
 	set : (key, value, callback) ->
 		@attributes[key] = value
 		callback() if callback?
+	setMulti: (values, callback=()->) ->
+		for key, value of values
+			@attributes[key] = value
+			callback()
 	get : (key, callback) ->
 		callback null, @attributes[key]
 	disconnect: () ->

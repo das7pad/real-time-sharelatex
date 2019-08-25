@@ -19,13 +19,22 @@ describe 'WebsocketController', ->
 			loginCount: 42
 		}
 		@callback = sinon.stub()
+		@clientStore = {}
 		@client =
 			id: @client_id = "mock-client-id-123"
 			params: {}
 			set: sinon.stub()
 			get: (param, cb) -> cb null, @params[param]
+			getMulti: (keys, cb) ->
+				ret = {}
+				for key in keys
+					ret[key] = @params[key]
+				cb(null, ret)
 			join: sinon.stub()
 			leave: sinon.stub()
+			setMulti: (values, cb) =>
+				@clientStore = values
+				cb()
 		@WebsocketController = SandboxedModule.require modulePath, requires:
 			"./WebApiManager": @WebApiManager = {}
 			"./AuthorizationManager": @AuthorizationManager = {}
@@ -65,34 +74,34 @@ describe 'WebsocketController', ->
 				@client.join.calledWith(@project_id).should.equal true
 					
 			it "should set the privilege level on the client", ->
-				@client.set.calledWith("privilege_level", @privilegeLevel).should.equal true
+				@clientStore["privilege_level"].should.equal @privilegeLevel
 					
 			it "should set the user's id on the client", ->
-				@client.set.calledWith("user_id", @user._id).should.equal true
+				@clientStore["user_id"].should.equal @user._id
 					
 			it "should set the user's email on the client", ->
-				@client.set.calledWith("email", @user.email).should.equal true
+				@clientStore["email"].should.equal @user.email
 					
 			it "should set the user's first_name on the client", ->
-				@client.set.calledWith("first_name", @user.first_name).should.equal true
+				@clientStore["first_name"].should.equal @user.first_name
 				
 			it "should set the user's last_name on the client", ->
-				@client.set.calledWith("last_name", @user.last_name).should.equal true
+				@clientStore["last_name"].should.equal @user.last_name
 					
 			it "should set the user's sign up date on the client", ->
-				@client.set.calledWith("signup_date", @user.signUpDate).should.equal true
+				@clientStore["signup_date"].should.equal @user.signUpDate
 					
 			it "should set the user's login_count on the client", ->
-				@client.set.calledWith("login_count", @user.loginCount).should.equal true
+				@clientStore["login_count"].should.equal @user.loginCount
 				
 			it "should set the connected time on the client", ->
-				@client.set.calledWith("connected_time", new Date()).should.equal true
+				@clientStore["connected_time"].should.equal new Date()
 				
 			it "should set the project_id on the client", ->
-				@client.set.calledWith("project_id", @project_id).should.equal true
+				@clientStore["project_id"].should.equal @project_id
 				
 			it "should set the project owner id on the client", ->
-				@client.set.calledWith("owner_id", @owner_id).should.equal true
+				@clientStore["owner_id"].should.equal @owner_id
 				
 			it "should call the callback with the project, privilegeLevel and protocolVersion", ->
 				@callback
@@ -124,11 +133,10 @@ describe 'WebsocketController', ->
 			@WebsocketLoadBalancer.emitToRoom = sinon.stub()
 			@clientsInRoom = []
 			@io =
-				sockets:
-					clients: (room_id) =>
-						if room_id != @project_id
-							throw "expected room_id to be project_id"
-						return @clientsInRoom
+				in: (room_id) =>
+					if room_id != @project_id
+						throw "expected room_id to be project_id"
+					{clients: (cb) => cb null, @clientsInRoom}
 			@client.params.project_id = @project_id
 			@client.params.user_id = @user_id
 			@WebsocketController.FLUSH_IF_EMPTY_DELAY = 0
@@ -392,14 +400,13 @@ describe 'WebsocketController', ->
 
 		describe "with a logged in user", ->
 			beforeEach ->
-				@clientParams = {
+				@client.params = {
 					project_id: @project_id
 					first_name: @first_name = "Douglas"
 					last_name: @last_name = "Adams"
 					email: @email = "joe@example.com"
 					user_id: @user_id = "user-id-123"
 				}
-				@client.get = (param, callback) => callback null, @clientParams[param]
 				@WebsocketController.updateClientPosition @client, @update
 
 				@populatedCursorData = 
@@ -432,14 +439,13 @@ describe 'WebsocketController', ->
 
 		describe "with a logged in user who has no last_name set", ->
 			beforeEach ->
-				@clientParams = {
+				@client.params = {
 					project_id: @project_id
 					first_name: @first_name = "Douglas"
 					last_name: undefined
 					email: @email = "joe@example.com"
 					user_id: @user_id = "user-id-123"
 				}
-				@client.get = (param, callback) => callback null, @clientParams[param]
 				@WebsocketController.updateClientPosition @client, @update
 
 				@populatedCursorData = 
@@ -472,14 +478,13 @@ describe 'WebsocketController', ->
 
 		describe "with a logged in user who has no first_name set", ->
 			beforeEach ->
-				@clientParams = {
+				@client.params = {
 					project_id: @project_id
 					first_name: undefined
 					last_name: @last_name = "Adams"
 					email: @email = "joe@example.com"
 					user_id: @user_id = "user-id-123"
 				}
-				@client.get = (param, callback) => callback null, @clientParams[param]
 				@WebsocketController.updateClientPosition @client, @update
 
 				@populatedCursorData = 
@@ -511,14 +516,13 @@ describe 'WebsocketController', ->
 				@metrics.inc.calledWith("editor.update-client-position", 0.1).should.equal true
 		describe "with a logged in user who has no names set", ->
 			beforeEach ->
-				@clientParams = {
+				@client.params = {
 					project_id: @project_id
 					first_name: undefined
 					last_name: undefined
 					email: @email = "joe@example.com"
 					user_id: @user_id = "user-id-123"
 				}
-				@client.get = (param, callback) => callback null, @clientParams[param]
 				@WebsocketController.updateClientPosition @client, @update
 
 			it "should send the update to the project name with no name", ->
@@ -537,10 +541,9 @@ describe 'WebsocketController', ->
 
 		describe "with an anonymous user", ->
 			beforeEach ->
-				@clientParams = {
+				@client.params = {
 					project_id: @project_id
 				}
-				@client.get = (param, callback) => callback null, @clientParams[param]
 				@WebsocketController.updateClientPosition @client, @update
 
 			it "should send the update to the project room with no name", ->
