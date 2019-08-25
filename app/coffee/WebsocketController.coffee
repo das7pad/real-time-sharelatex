@@ -27,16 +27,18 @@ module.exports = WebsocketController =
 				
 			client.join project_id
 
-			client.set("privilege_level", privilegeLevel)
-			client.set("user_id", user_id)
-			client.set("project_id", project_id)
-			client.set("owner_id", project?.owner?._id)
-			client.set("first_name", user?.first_name)
-			client.set("last_name", user?.last_name)
-			client.set("email", user?.email)
-			client.set("connected_time", new Date())
-			client.set("signup_date", user?.signUpDate)
-			client.set("login_count", user?.loginCount)
+			client.setMulti {
+				"privilege_level": privilegeLevel,
+				"user_id": user_id,
+				"project_id": project_id,
+				"owner_id": project?.owner?._id,
+				"first_name": user?.first_name,
+				"last_name": user?.last_name,
+				"email": user?.email,
+				"connected_time": new Date(),
+				"signup_date": user?.signUpDate,
+				"login_count": user?.loginCount,
+			}
 			
 			callback null, project, privilegeLevel, WebsocketController.PROTOCOL_VERSION
 			logger.log {user_id, project_id, client_id: client.id}, "user joined project"
