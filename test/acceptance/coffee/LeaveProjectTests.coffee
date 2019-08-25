@@ -21,7 +21,9 @@ describe "leaveProject", ->
 					
 				(cb) =>
 					@clientA = RealTimeClient.connect()
-					@clientA.on "connectionAccepted", cb
+					@clientA.on "connectionAccepted", () =>
+						@clientA_id = @clientA.id
+						cb()
 					
 				(cb) =>
 					@clientB = RealTimeClient.connect()
@@ -51,7 +53,7 @@ describe "leaveProject", ->
 			], done
 
 		it "should emit a disconnect message to the room", ->
-			@clientBDisconnectMessages.should.deep.equal [@clientA.id]
+			@clientBDisconnectMessages.should.deep.equal [@clientA_id]
 	
 		it "should no longer list the client in connected users", (done) ->
 			@clientB.emit "clientTracking.getConnectedUsers", (error, users) =>
