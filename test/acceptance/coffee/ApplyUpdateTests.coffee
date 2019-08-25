@@ -99,7 +99,7 @@ describe "applyOtUpdate", ->
 		
 		it "should disconnect the client", (done) ->
 			setTimeout () =>
-				@client.socket.connected.should.equal false
+				@client.connected.should.equal false
 				done()
 			, 300
 			

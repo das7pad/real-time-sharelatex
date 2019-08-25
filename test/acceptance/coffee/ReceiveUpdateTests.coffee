@@ -96,5 +96,5 @@ describe "receiveUpdate", ->
 			@clientBErrors.should.deep.equal [@error]
 			
 		it "should disconnect the clients", ->
-			@clientA.socket.connected.should.equal false
-			@clientB.socket.connected.should.equal false
+			@clientA.connected.should.equal false
+			@clientB.connected.should.equal false
