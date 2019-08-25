@@ -38,14 +38,16 @@ module.exports = WebsocketController =
 				"connected_time": new Date(),
 				"signup_date": user?.signUpDate,
 				"login_count": user?.loginCount,
-			}
-			
-			callback null, project, privilegeLevel, WebsocketController.PROTOCOL_VERSION
-			logger.log {user_id, project_id, client_id: client.id}, "user joined project"
-			
-			# No need to block for setting the user as connected in the cursor tracking
-			ConnectedUsersManager.updateUserPosition project_id, client.id, user, null, () ->
-		
+			}, (error) ->
+				if error
+					return callback(error)
+
+				callback null, project, privilegeLevel, WebsocketController.PROTOCOL_VERSION
+				logger.log {user_id, project_id, client_id: client.id}, "user joined project"
+
+				# No need to block for setting the user as connected in the cursor tracking
+				ConnectedUsersManager.updateUserPosition project_id, client.id, user, null, () ->
+
 	# We want to flush a project if there are no more (local) connected clients
 	# but we need to wait for the triggering client to disconnect. How long we wait
 	# is determined by FLUSH_IF_EMPTY_DELAY.
