@@ -94,15 +94,15 @@ Error.stackTraceLimit = 10
 
 
 shutdownCleanly = (signal) ->
-	connectedClients = io.sockets.clients()?.length
-	if connectedClients == 0
-		logger.log("no clients connected, exiting")
-		process.exit()
-	else
-		logger.log {connectedClients}, "clients still connected, not shutting down yet"
-		setTimeout () ->
-			shutdownCleanly(signal)
-		, 10000
+	io.sockets.clients (error, connectedClients) ->
+		if connectedClients.length == 0
+			logger.log("no clients connected, exiting")
+			process.exit()
+		else
+			logger.log {connectedClients}, "clients still connected, not shutting down yet"
+			setTimeout () ->
+				shutdownCleanly(signal)
+			, 10000
 
 forceDrain = ->
 	logger.log {delay_ms:Settings.forceDrainMsDelay}, "starting force drain after timeout"

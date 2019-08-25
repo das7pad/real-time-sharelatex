@@ -38,7 +38,7 @@ module.exports = DocumentUpdaterController =
 				HealthCheckManager.check channel, message.key
 
 	_applyUpdateFromDocumentUpdater: (io, doc_id, update) ->
-		clientList = io.sockets.clients(doc_id)
+		clientList = Object.values(io.to(doc_id).connected)
 		# avoid unnecessary work if no clients are connected
 		if clientList.length is 0
 			return
@@ -59,9 +59,7 @@ module.exports = DocumentUpdaterController =
 			logger.log doc_id: doc_id, socketIoClients: (client.id for client in clientList), "discarded duplicate clients"
 
 	_processErrorFromDocumentUpdater: (io, doc_id, error, message) ->
-		for client in io.sockets.clients(doc_id)
+		for client in Object.values(io.to(doc_id).connected)
 			logger.warn err: error, doc_id: doc_id, client_id: client.id, "error from document updater, disconnecting client"
 			client.emit "otUpdateError", error, message
 			client.disconnect()
-
-
