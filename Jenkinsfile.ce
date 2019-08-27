@@ -15,11 +15,6 @@ pipeline {
   stages {
     stage('Prepare environment') {
       stages {
-        stage('Clean Previous artifacts') {
-          steps {
-            sh 'git clean -xdf'
-          }
-        }
         stage('Pull node image') {
             when {
                 expression {
@@ -65,6 +60,24 @@ pipeline {
             }
           }
         }
+        stage('Cleanup and Create Output Directory For Test Results') {
+          steps {
+            sh 'mkdir --parents --mode=777 output'
+            sh '''
+              docker run --rm \
+                --volume $PWD/output:/home/node \
+                --user node \
+                $IMAGE_NODE \
+                sh -c 'find /home/node -mindepth 1 | xargs rm -rfv'
+            '''
+          }
+        }
+        stage('Clean Previous artifacts') {
+          steps {
+            sh 'git clean -xdf'
+            sh 'mkdir --parents --mode=777 output'
+          }
+        }
       }
     }
     stage('CI') {
@@ -82,6 +95,11 @@ pipeline {
           steps {
             sh 'make test_unit'
           }
+          post {
+            always {
+              xunit (tools: [JUnit(pattern: 'output/unit.xml')])
+            }
+          }
         }
 
         stage('Acceptance Tests') {
@@ -89,6 +107,9 @@ pipeline {
             sh 'make test_acceptance'
           }
           post {
+            always {
+              xunit (tools: [JUnit(pattern: 'output/acceptance.xml')])
+            }
             cleanup {
               sh 'make clean_test_acceptance'
             }

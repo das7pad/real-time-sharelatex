@@ -8,7 +8,18 @@ services:
   test_unit:
     image: ci/$PROJECT_NAME:$BRANCH_NAME-$BUILD_NUMBER
     user: node
-    command: npm run test:unit:_run
+    command:
+      - npx
+      - mocha
+      - --exit
+      - --recursive
+      - --reporter
+      - xunit
+      - --reporter-options
+      - output=/home/node/unit.xml,suiteName='Unit Tests'
+      - test/unit/js
+    volumes:
+      - ./output:/home/node:z
 
   test_acceptance:
     build: .
@@ -24,7 +35,19 @@ services:
       - redis_realtime
       - redis_websessions
     user: node
-    command: npm run test:acceptance:_run
+    entrypoint:
+      - npx
+      - mocha
+      - --exit
+      - --recursive
+      - --reporter
+      - xunit
+      - --reporter-options
+    command:
+      - output=/home/node/acceptance.xml,suiteName='App Acceptance Tests'
+      - test/acceptance/js
+    volumes:
+      - ./output:/home/node:z
 
   tar:
     build: .
