@@ -15,14 +15,13 @@ module.exports = HttpController =
 			return callback(error) if error?
 			client = {client_id, project_id, user_id, first_name, last_name, email, connected_time}
 			client.rooms = []
-			for name, joined of ioClient.manager.roomClients[client_id]
-				if joined and name != ""
-					client.rooms.push name.replace(/^\//, "") # Remove leading /
+			for name in Object.values(ioClient.rooms)
+				client.rooms.push name.replace(/^\//, "") # Remove leading /
 			callback(null, client)
 
 	getConnectedClients: (req, res, next) ->
 		io = req.app.get("io")
-		ioClients = io.sockets.clients()
+		ioClients = Object.values(io.sockets.connected)
 		async.map ioClients, HttpController._getConnectedClientView, (error, clients) ->
 			return next(error) if error?
 			res.json clients
@@ -30,7 +29,7 @@ module.exports = HttpController =
 	getConnectedClient: (req, res, next) ->
 		{client_id} = req.params
 		io = req.app.get("io")
-		ioClient = io.sockets.socket(client_id)
+		ioClient = io.sockets.connected[client_id]
 		HttpController._getConnectedClientView ioClient, (error, client) ->
 			return next(error) if error?
 			res.json client

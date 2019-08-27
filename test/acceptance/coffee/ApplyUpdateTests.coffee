@@ -54,7 +54,7 @@ describe "applyOtUpdate", ->
 				update = JSON.parse(update)
 				update.op.should.deep.equal @update.op
 				update.meta.should.deep.equal {
-					source: @client.socket.sessionid
+					source: @client.id
 					user_id: @user_id
 				}
 				done()
@@ -99,7 +99,7 @@ describe "applyOtUpdate", ->
 		
 		it "should disconnect the client", (done) ->
 			setTimeout () =>
-				@client.socket.connected.should.equal false
+				@client.connected.should.equal false
 				done()
 			, 300
 			
@@ -148,7 +148,7 @@ describe "applyOtUpdate", ->
 				update = JSON.parse(update)
 				update.op.should.deep.equal @comment_update.op
 				update.meta.should.deep.equal {
-					source: @client.socket.sessionid
+					source: @client.id
 					user_id: @user_id
 				}
 				done()

@@ -14,13 +14,13 @@ describe "DrainManager", ->
 
 	describe "reconnectNClients", ->
 		beforeEach ->
-			@clients = []
+			@clients = {}
 			for i in [0..9]
 				@clients[i] = {
 					id: i
 					emit: sinon.stub()
 				}
-			@io.sockets.clients.returns @clients
+			@io.sockets.connected = @clients
 
 		describe "after first pass", ->
 			beforeEach ->

@@ -77,14 +77,16 @@ describe "DocumentUpdaterController", ->
 		beforeEach ->
 			@sourceClient = new MockClient()
 			@otherClients = [new MockClient(), new MockClient()]
+			clients = {}
+			clients[@sourceClient.id] = @sourceClient
+			clients[@otherClients[0].id] = @otherClients[0]
+			clients[@otherClients[1].id] = @otherClients[1]
 			@update =
 				op: [ t: "foo", p: 12 ]
 				meta: source: @sourceClient.id
 				v: @version = 42
 				doc: @doc_id
-			@io.sockets =
-				clients: sinon.stub().returns([@sourceClient, @otherClients..., @sourceClient]) # include a duplicate client
-		
+			@io.to = sinon.stub().returns(connected: clients)
 		describe "normally", ->
 			beforeEach ->
 				@EditorUpdatesController._applyUpdateFromDocumentUpdater @io, @doc_id, @update
@@ -96,7 +98,7 @@ describe "DocumentUpdaterController", ->
 				@sourceClient.emit.calledOnce.should.equal true
 
 			it "should get the clients connected to the document", ->
-				@io.sockets.clients
+				@io.to
 					.calledWith(@doc_id)
 					.should.equal true
 
@@ -125,15 +127,16 @@ describe "DocumentUpdaterController", ->
 	describe "_processErrorFromDocumentUpdater", ->
 		beforeEach ->
 			@clients = [new MockClient(), new MockClient()]
-			@io.sockets =
-				clients: sinon.stub().returns(@clients)
+			client_mapping = {}
+			client_mapping[@clients[0].id] = @clients[0]
+			client_mapping[@clients[1].id] = @clients[1]
+			@io.to = sinon.stub().returns(connected: client_mapping)
 			@EditorUpdatesController._processErrorFromDocumentUpdater @io, @doc_id, "Something went wrong"
 
 		it "should log a warning", ->
 			@logger.warn.called.should.equal true
 
 		it "should disconnect all clients in that document", ->
-			@io.sockets.clients.calledWith(@doc_id).should.equal true
+			@io.to.calledWith(@doc_id).should.equal true
 			for client in @clients
 				client.disconnect.called.should.equal true
-
