@@ -87,22 +87,11 @@ module.exports = RoomManager =
             IdMap.delete(id)
             metrics.gauge "room-listeners", RoomEvents.eventNames().length
 
-    # internal functions below, these access socket.io rooms data directly and
-    # will need updating for socket.io v2
-
     _clientsInRoom: (client, room) ->
-        nsp = client.namespace.name
-        name = (nsp + '/') + room;
-        return (client.manager?.rooms?[name] || []).length
+        return client.server.in(room).clients().length
 
     _roomsClientIsIn: (client) ->
-        roomList = for fullRoomPath of client.manager.roomClients?[client.id] when fullRoomPath isnt ''
-            # strip socket.io prefix from room to get original id
-            [prefix, room] = fullRoomPath.split('/', 2)
-            room
-        return roomList
+        return Object.keys(client.rooms)
 
     _clientAlreadyInRoom: (client, room) ->
-        nsp = client.namespace.name
-        name = (nsp + '/') + room;
-        return client.manager.roomClients?[client.id]?[name]
+        return client.rooms.hasOwnProperty(room)
