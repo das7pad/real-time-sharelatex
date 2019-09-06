@@ -23,12 +23,14 @@ services:
     environment:
       LOG_LEVEL: fatal
       DOC_UPDATER_REDIS_HOST: redis_documentupdater
+      PUBSUB_REDIS_HOST: redis_pubsub
       REAL_TIME_REDIS_HOST: redis_realtime
       WEB_SESSIONS_REDIS_HOST: redis_websessions
       MOCHA_GREP: ${MOCHA_GREP}
     user: node
     depends_on:
       - redis_documentupdater
+      - redis_pubsub
       - redis_realtime
       - redis_websessions
     command: npm run test:acceptance
@@ -42,6 +44,8 @@ services:
     user: root
 
   redis_documentupdater:
+    image: redis
+  redis_pubsub:
     image: redis
   redis_realtime:
     image: redis
