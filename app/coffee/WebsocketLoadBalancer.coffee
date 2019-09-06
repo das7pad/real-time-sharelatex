@@ -56,9 +56,9 @@ module.exports = WebsocketLoadBalancer =
 			if message.room_id == "all"
 				io.sockets.emit(message.message, message.payload...)
 			else if message.message is 'clientTracking.refresh' && message.room_id?
-				clientList = io.sockets.clients(message.room_id)
+				clientList = io.sockets.in(message.room_id).clients()
 				logger.log {channel:channel, message: message.message, room_id: message.room_id, message_id: message._id, socketIoClients: (client.id for client in clientList)}, "refreshing client list"
-				for client in clientList 
+				for client in clientList
 					ConnectedUsersManager.refreshClient(message.room_id, client.id)
 			else if message.room_id?
 				if message._id? && Settings.checkEventOrder
