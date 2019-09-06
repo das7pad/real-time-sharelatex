@@ -1,10 +1,11 @@
 logger = require "logger-sharelatex"
 settings = require 'settings-sharelatex'
-redis = require("redis-sharelatex")
-rclient = redis.createClient(settings.redis.documentupdater)
+RedisClientManager = require "./RedisClientManager"
 SafeJsonParse = require "./SafeJsonParse"
 EventLogger = require "./EventLogger"
 HealthCheckManager = require "./HealthCheckManager"
+RoomManager = require "./RoomManager"
+ChannelManager = require "./ChannelManager"
 metrics = require "metrics-sharelatex"
 
 MESSAGE_SIZE_LOG_LIMIT = 1024 * 1024 # 1Mb
@@ -12,21 +13,41 @@ MESSAGE_SIZE_LOG_LIMIT = 1024 * 1024 # 1Mb
 module.exports = DocumentUpdaterController =
 	# DocumentUpdaterController is responsible for updates that come via Redis
 	# Pub/Sub from the document updater.
+	rclientList: RedisClientManager.createClientList(settings.redis.pubsub)
 
 	listenForUpdatesFromDocumentUpdater: (io) ->
-		rclient.subscribe "applied-ops"
-		rclient.on "message", (channel, message) ->
-			metrics.inc "rclient", 0.001 # global event rate metric
-			EventLogger.debugEvent(channel, message) if settings.debugEvents > 0
-			DocumentUpdaterController._processMessageFromDocumentUpdater(io, channel, message)
-		
+		logger.log {rclients: @rclientList.length}, "listening for applied-ops events"
+		for rclient, i in @rclientList
+			rclient.subscribe "applied-ops"
+			rclient.on "message", (channel, message) ->
+				metrics.inc "rclient", 0.001 # global event rate metric
+				EventLogger.debugEvent(channel, message) if settings.debugEvents > 0
+				DocumentUpdaterController._processMessageFromDocumentUpdater(io, channel, message)
+		# create metrics for each redis instance only when we have multiple redis clients
+		if @rclientList.length > 1
+			for rclient, i in @rclientList
+				do (i) ->
+					rclient.on "message", () ->
+						metrics.inc "rclient-#{i}", 0.001 # per client event rate metric
+		@handleRoomUpdates(@rclientList)
+
+	handleRoomUpdates: (rclientSubList) ->
+		roomEvents = RoomManager.eventSource()
+		roomEvents.on 'doc-active', (doc_id) ->
+			subscribePromises = for rclient in rclientSubList
+				ChannelManager.subscribe rclient, "applied-ops", doc_id
+			RoomManager.emitOnCompletion(subscribePromises, "doc-subscribed-#{doc_id}")
+		roomEvents.on 'doc-empty', (doc_id) ->
+			for rclient in rclientSubList
+				ChannelManager.unsubscribe rclient, "applied-ops", doc_id
+
 	_processMessageFromDocumentUpdater: (io, channel, message) ->
 		SafeJsonParse.parse message, (error, message) ->
 			if error?
 				logger.error {err: error, channel}, "error parsing JSON"
 				return
 			if message.op?
-				if message._id?
+				if message._id? && settings.checkEventOrder
 					status = EventLogger.checkEventOrder("applied-ops", message._id, message)
 					if status is 'duplicate'
 						return # skip duplicate events

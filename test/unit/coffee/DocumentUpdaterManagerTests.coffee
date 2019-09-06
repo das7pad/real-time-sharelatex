@@ -10,13 +10,13 @@ describe 'DocumentUpdaterManager', ->
 		@doc_id = "doc-id-394"
 		@lines = ["one", "two", "three"]
 		@version = 42
-		@settings = 
+		@settings =
 			apis: documentupdater: url: "http://doc-updater.example.com"
 			redis: documentupdater:
 				key_schema:
 					pendingUpdates: ({doc_id}) -> "PendingUpdates:#{doc_id}"
 		@rclient = {auth:->}
-			
+
 		@DocumentUpdaterManager = SandboxedModule.require modulePath,
 			requires:
 				'settings-sharelatex':@settings
@@ -59,17 +59,19 @@ describe 'DocumentUpdaterManager', ->
 			it "should return an error to the callback", ->
 				@callback.calledWith(@error).should.equal true
 
-		describe "when the document updater returns a 422 status code", ->
-			beforeEach ->
-				@request.get = sinon.stub().callsArgWith(1, null, { statusCode: 422 }, "")
-				@DocumentUpdaterManager.getDocument @project_id, @doc_id, @fromVersion, @callback
+		[404, 422].forEach (statusCode) ->
+			describe "when the document updater returns a #{statusCode} status code", ->
+				beforeEach ->
+					@request.get = sinon.stub().callsArgWith(1, null, { statusCode }, "")
+					@DocumentUpdaterManager.getDocument @project_id, @doc_id, @fromVersion, @callback
 
-			it "should return the callback with an error", ->
-				err = new Error("doc updater could not load requested ops")
-				err.statusCode = 422
-				@callback
-					.calledWith(err)
-					.should.equal true
+				it "should return the callback with an error", ->
+					@callback.called.should.equal(true)
+					err = @callback.getCall(0).args[0]
+					err.should.have.property('statusCode', statusCode)
+					err.should.have.property('message', "doc updater could not load requested ops")
+					@logger.error.called.should.equal(false)
+					@logger.warn.called.should.equal(true)
 
 		describe "when the document updater returns a failure error code", ->
 			beforeEach ->
@@ -77,11 +79,11 @@ describe 'DocumentUpdaterManager', ->
 				@DocumentUpdaterManager.getDocument @project_id, @doc_id, @fromVersion, @callback
 
 			it "should return the callback with an error", ->
-				err = new Error("doc updater returned failure status code: 500")
-				err.statusCode = 500
-				@callback
-					.calledWith(err)
-					.should.equal true
+				@callback.called.should.equal(true)
+				err = @callback.getCall(0).args[0]
+				err.should.have.property('statusCode', 500)
+				err.should.have.property('message', "doc updater returned a non-success status code: 500")
+				@logger.error.called.should.equal(true)
 
 	describe 'flushProjectToMongoAndDelete', ->
 		beforeEach ->
@@ -93,7 +95,7 @@ describe 'DocumentUpdaterManager', ->
 				@DocumentUpdaterManager.flushProjectToMongoAndDelete @project_id, @callback
 
 			it 'should delete the project from the document updater', ->
-				url = "#{@settings.apis.documentupdater.url}/project/#{@project_id}"
+				url = "#{@settings.apis.documentupdater.url}/project/#{@project_id}?background=true"
 				@request.del.calledWith(url).should.equal true
 
 			it "should call the callback with no error", ->
@@ -113,18 +115,17 @@ describe 'DocumentUpdaterManager', ->
 				@DocumentUpdaterManager.flushProjectToMongoAndDelete @project_id, @callback
 
 			it "should return the callback with an error", ->
-				err = new Error("doc updater returned failure status code: 500")
-				err.statusCode = 500
-				@callback
-					.calledWith(err)
-					.should.equal true
+				@callback.called.should.equal(true)
+				err = @callback.getCall(0).args[0]
+				err.should.have.property('statusCode', 500)
+				err.should.have.property('message', "document updater returned a failure status code: 500")
 
 	describe 'queueChange', ->
 		beforeEach ->
 			@change = {
-				"action":"removeText",
-				"range":{"start":{"row":2,"column":2},"end":{"row":2,"column":3}},
-				"text":"e"
+				"doc":"1234567890",
+				"op":["d":"test", "p":345]
+				"v": 789
 			}
 			@rclient.rpush = sinon.stub().yields()
 			@callback = sinon.stub()
@@ -161,3 +162,16 @@ describe 'DocumentUpdaterManager', ->
 
 			it "should not push the change onto the pending-updates-list queue", ->
 				@rclient.rpush.called.should.equal false
+
+		describe "with invalid keys", ->
+			beforeEach ->
+				@change = {
+					"op":["d":"test", "p":345]
+					"version": 789 # not a valid key
+				}
+				@DocumentUpdaterManager.queueChange(@project_id, @doc_id, @change, @callback)
+
+			it "should remove the invalid keys from the change", ->
+				@rclient.rpush
+					.calledWith("PendingUpdates:#{@doc_id}", JSON.stringify({op:@change.op}))
+					.should.equal true

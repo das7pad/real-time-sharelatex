@@ -10,6 +10,8 @@ describe "DocumentUpdaterController", ->
 		@doc_id = "doc-id-123"
 		@callback = sinon.stub()
 		@io = { "mock": "socket.io" }
+		@rclient = []
+		@RoomEvents = { on: sinon.stub() }
 		@EditorUpdatesController = SandboxedModule.require modulePath, requires:
 			"logger-sharelatex": @logger = { error: sinon.stub(), log: sinon.stub(), warn: sinon.stub() }
 			"settings-sharelatex": @settings =
@@ -17,26 +19,38 @@ describe "DocumentUpdaterController", ->
 					documentupdater:
 						key_schema:
 							pendingUpdates: ({doc_id}) -> "PendingUpdates:#{doc_id}"
-			"redis-sharelatex" : 
-				createClient: () => 
-					@rclient = {}
+					pubsub: null
+			"redis-sharelatex" : @redis =
+				createClient: (name) =>
+					@rclient.push(rclientStub = {name:name})
+					return rclientStub
 			"./SafeJsonParse": @SafeJsonParse =
 				parse: (data, cb) => cb null, JSON.parse(data)
 			"./EventLogger": @EventLogger = {checkEventOrder: sinon.stub()}
 			"./HealthCheckManager": {check: sinon.stub()}
 			"metrics-sharelatex": @metrics = {inc: sinon.stub()}
+			"./RoomManager" : @RoomManager = { eventSource: sinon.stub().returns @RoomEvents}
+			"./ChannelManager": @ChannelManager = {}
 
 	describe "listenForUpdatesFromDocumentUpdater", ->
 		beforeEach ->
-			@rclient.subscribe = sinon.stub()
-			@rclient.on = sinon.stub()
+			@rclient.length = 0  # clear any existing clients
+			@EditorUpdatesController.rclientList = [@redis.createClient("first"), @redis.createClient("second")]
+			@rclient[0].subscribe = sinon.stub()
+			@rclient[0].on = sinon.stub()
+			@rclient[1].subscribe = sinon.stub()
+			@rclient[1].on = sinon.stub()
 			@EditorUpdatesController.listenForUpdatesFromDocumentUpdater()
 		
 		it "should subscribe to the doc-updater stream", ->
-			@rclient.subscribe.calledWith("applied-ops").should.equal true
+			@rclient[0].subscribe.calledWith("applied-ops").should.equal true
 
 		it "should register a callback to handle updates", ->
-			@rclient.on.calledWith("message").should.equal true
+			@rclient[0].on.calledWith("message").should.equal true
+
+		it "should subscribe to any additional doc-updater stream", ->
+			@rclient[1].subscribe.calledWith("applied-ops").should.equal true
+			@rclient[1].on.calledWith("message").should.equal true
 
 	describe "_processMessageFromDocumentUpdater", ->
 		describe "with bad JSON", ->

@@ -1,5 +1,11 @@
 settings =
 	redis:
+
+		pubsub:
+			host: process.env['PUBSUB_REDIS_HOST'] or process.env['REDIS_HOST'] or "localhost"
+			port: process.env['PUBSUB_REDIS_PORT'] or process.env['REDIS_PORT'] or "6379"
+			password: process.env["PUBSUB_REDIS_PASSWORD"] or process.env["REDIS_PASSWORD"] or ""
+
 		realtime:
 			host: process.env['REAL_TIME_REDIS_HOST'] or process.env['REDIS_HOST'] or "localhost"
 			port: process.env['REAL_TIME_REDIS_PORT'] or process.env['REDIS_PORT'] or "6379"
@@ -42,9 +48,13 @@ settings =
 	
 	max_doc_length: 2 * 1024 * 1024 # 2mb
 
-	forceDrainMsDelay: process.env['FORCE_DRAIN_MS_DELAY'] or false
+	shutdownDrainTimeWindow: process.env['SHUTDOWN_DRAIN_TIME_WINDOW'] or 9
 
 	continualPubsubTraffic: process.env['CONTINUAL_PUBSUB_TRAFFIC'] or false
+
+	checkEventOrder: process.env['CHECK_EVENT_ORDER'] or false
+
+	publishOnIndividualChannels: process.env['PUBLISH_ON_INDIVIDUAL_CHANNELS'] or false
 
 	clientStoreBackend: process.env['CLIENT_STORE_BACKEND'] or 'memory'
 

@@ -1,15 +1,16 @@
 Settings = require 'settings-sharelatex'
 logger = require 'logger-sharelatex'
-redis = require("redis-sharelatex")
+RedisClientManager = require "./RedisClientManager"
 SafeJsonParse = require "./SafeJsonParse"
-rclientPub = redis.createClient(Settings.redis.realtime)
-rclientSub = redis.createClient(Settings.redis.realtime)
 EventLogger = require "./EventLogger"
 HealthCheckManager = require "./HealthCheckManager"
+RoomManager = require "./RoomManager"
+ChannelManager = require "./ChannelManager"
+ConnectedUsersManager = require "./ConnectedUsersManager"
 
 module.exports = WebsocketLoadBalancer =
-	rclientPub: rclientPub
-	rclientSub: rclientSub
+	rclientPubList: RedisClientManager.createClientList(Settings.redis.pubsub)
+	rclientSubList: RedisClientManager.createClientList(Settings.redis.pubsub)
 
 	emitToRoom: (room_id, message, payload...) ->
 		if !room_id?
@@ -20,16 +21,32 @@ module.exports = WebsocketLoadBalancer =
 			message: message
 			payload: payload
 		logger.log {room_id, message, payload, length: data.length}, "emitting to room"
-		@rclientPub.publish "editor-events", data
+
+		for rclientPub in @rclientPubList
+			ChannelManager.publish rclientPub, "editor-events", room_id, data
 
 	emitToAll: (message, payload...) ->
 		@emitToRoom "all", message, payload...
 
 	listenForEditorEvents: (io) ->
-		@rclientSub.subscribe "editor-events"
-		@rclientSub.on "message", (channel, message) ->
-			EventLogger.debugEvent(channel, message) if Settings.debugEvents > 0
-			WebsocketLoadBalancer._processEditorEvent io, channel, message
+		logger.log {rclients: @rclientPubList.length}, "publishing editor events"
+		logger.log {rclients: @rclientSubList.length}, "listening for editor events"
+		for rclientSub in @rclientSubList
+			rclientSub.subscribe "editor-events"
+			rclientSub.on "message", (channel, message) ->
+				EventLogger.debugEvent(channel, message) if Settings.debugEvents > 0
+				WebsocketLoadBalancer._processEditorEvent io, channel, message
+		@handleRoomUpdates(@rclientSubList)
+
+	handleRoomUpdates: (rclientSubList) ->
+		roomEvents = RoomManager.eventSource()
+		roomEvents.on 'project-active', (project_id) ->
+			subscribePromises = for rclient in rclientSubList
+				ChannelManager.subscribe rclient, "editor-events", project_id
+			RoomManager.emitOnCompletion(subscribePromises, "project-subscribed-#{project_id}")
+		roomEvents.on 'project-empty', (project_id) ->
+			for rclient in rclientSubList
+				ChannelManager.unsubscribe rclient, "editor-events", project_id
 
 	_processEditorEvent: (io, channel, message) ->
 		SafeJsonParse.parse message, (error, message) ->
@@ -38,8 +55,13 @@ module.exports = WebsocketLoadBalancer =
 				return
 			if message.room_id == "all"
 				io.sockets.emit(message.message, message.payload...)
+			else if message.message is 'clientTracking.refresh' && message.room_id?
+				clientList = io.sockets.clients(message.room_id)
+				logger.log {channel:channel, message: message.message, room_id: message.room_id, message_id: message._id, socketIoClients: (client.id for client in clientList)}, "refreshing client list"
+				for client in clientList 
+					ConnectedUsersManager.refreshClient(message.room_id, client.id)
 			else if message.room_id?
-				if message._id?
+				if message._id? && Settings.checkEventOrder
 					status = EventLogger.checkEventOrder("editor-events", message._id, message)
 					if status is "duplicate"
 						return # skip duplicate events

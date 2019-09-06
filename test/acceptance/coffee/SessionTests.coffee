@@ -14,6 +14,7 @@ describe "Session", ->
 				@client = RealTimeClient.connect()
 				@client.on "connectionAccepted", () ->
 					done()
+			return null
 		
 		it "should not get disconnected", (done) ->
 			disconnected = false

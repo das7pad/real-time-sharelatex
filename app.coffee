@@ -2,6 +2,7 @@ Metrics = require("metrics-sharelatex")
 Settings = require "settings-sharelatex"
 Metrics.initialize(Settings.appName or "real-time")
 async = require("async")
+_ = require "underscore"
 
 logger = require "logger-sharelatex"
 logger.initialize("real-time")
@@ -22,9 +23,11 @@ CookieParser = require("cookie-parser")
 DrainManager = require("./app/js/DrainManager")
 HealthCheckManager = require("./app/js/HealthCheckManager")
 
+# work around frame handler bug in socket.io v0.9.16
+require("./socket.io.patch.js")
 # Set up socket.io server
 app = express()
-Metrics.injectMetricsRoute(app)
+
 server = require('http').createServer(app)
 io = require('socket.io').listen(server)
 
@@ -33,6 +36,9 @@ sessionStore = new RedisStore(client: sessionRedisClient)
 cookieParser = CookieParser(Settings.security.sessionSecret)
 
 sessionSockets = new SessionSockets(io, sessionStore, cookieParser, Settings.cookieName)
+
+Metrics.injectMetricsRoute(app)
+app.use(Metrics.http.monitor(logger))
 
 io.set('browser client minification', true)
 io.set('browser client etag', true)
@@ -44,14 +50,17 @@ io.set('match origin protocol', true)
 # gzip uses a Node 0.8.x method of calling the gzip program which
 # doesn't work with 0.6.x
 #io.enable('browser client gzip')
-io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling', 'polling'])
+io.set('transports', ['websocket', 'flashsocket', 'htmlfile', 'xhr-polling', 'jsonp-polling', 'polling'])
 io.set('log level', 1)
 
 app.get "/", (req, res, next) ->
 	res.send "real-time-sharelatex is alive"
 
 app.get "/status", (req, res, next) ->
-	res.send "real-time-sharelatex is alive"
+	if Settings.shutDownInProgress
+		res.send 503 # Service unavailable
+	else
+		res.send "real-time-sharelatex is alive"
 
 app.get "/debug/events", (req, res, next) ->
 	Settings.debugEvents = parseInt(req.query?.count,10) || 20
@@ -59,7 +68,8 @@ app.get "/debug/events", (req, res, next) ->
 	res.send "debug mode will log next #{Settings.debugEvents} events"
 
 rclient = require("redis-sharelatex").createClient(Settings.redis.realtime)
-app.get "/health_check/redis", (req, res, next) ->
+
+healthCheck = (req, res, next)->
 	rclient.healthCheck (error) ->
 		if error?
 			logger.err {err: error}, "failed redis health check"
@@ -71,7 +81,11 @@ app.get "/health_check/redis", (req, res, next) ->
 		else
 			res.sendStatus 200
 
-Metrics.injectMetricsRoute(app)
+app.get "/health_check", healthCheck
+
+app.get "/health_check/redis", healthCheck
+
+
 
 Router = require "./app/js/Router"
 Router.configure(app, io, sessionSockets)
@@ -104,43 +118,38 @@ shutdownCleanly = (signal) ->
 				shutdownCleanly(signal)
 			, 10000
 
-forceDrain = ->
-	logger.log {delay_ms:Settings.forceDrainMsDelay}, "starting force drain after timeout"
-	setTimeout ()-> 
-		logger.log "starting drain"
-		DrainManager.startDrain(io, 4)
-	, Settings.forceDrainMsDelay
-
-shutDownInProgress = false
-if Settings.forceDrainMsDelay?
-	Settings.forceDrainMsDelay = parseInt(Settings.forceDrainMsDelay, 10)
-	logger.log forceDrainMsDelay: Settings.forceDrainMsDelay,"forceDrainMsDelay enabled"
+Settings.shutDownInProgress = false
+if Settings.shutdownDrainTimeWindow?
+	shutdownDrainTimeWindow = parseInt(Settings.shutdownDrainTimeWindow, 10)
+	logger.log shutdownDrainTimeWindow: shutdownDrainTimeWindow,"shutdownDrainTimeWindow enabled"
 	for signal in ['SIGINT', 'SIGHUP', 'SIGQUIT', 'SIGUSR1', 'SIGUSR2', 'SIGTERM', 'SIGABRT']
 		process.on signal, ->
-			if shutDownInProgress
+			if Settings.shutDownInProgress
 				logger.log signal: signal, "shutdown already in progress, ignoring signal"
 				return
 			else
-				shutDownInProgress = true
-				logger.log signal: signal, "received interrupt, cleaning up"
+				Settings.shutDownInProgress = true
+				logger.warn signal: signal, "received interrupt, starting drain over #{shutdownDrainTimeWindow} mins"
+				DrainManager.startDrainTimeWindow(io, shutdownDrainTimeWindow)
 				shutdownCleanly(signal)
-				forceDrain()
 
 
 
 if Settings.continualPubsubTraffic
 	console.log "continualPubsubTraffic enabled"
 
-	pubSubClient = redis.createClient(Settings.redis.documentupdater)
+	pubsubClient = redis.createClient(Settings.redis.pubsub)
+	clusterClient = redis.createClient(Settings.redis.websessions)
 
-	publishJob = (channel, cb)->
+	publishJob = (channel, callback)->
 		checker = new HealthCheckManager(channel)
 		logger.debug {channel:channel}, "sending pub to keep connection alive"
 		json = JSON.stringify({health_check:true, key: checker.id, date: new Date().toString()})
-		pubSubClient.publish channel, json, (err)->
+		pubsubClient.publish channel, json, (err)->
 			if err?
 				logger.err {err, channel}, "error publishing pubsub traffic to redis"
-			cb(err)
+			clusterClient.publish "cluster-continual-traffic", {keep: "alive"}, callback
+
 
 	runPubSubTraffic = ->
 		async.map ["applied-ops", "editor-events"], publishJob, (err)->

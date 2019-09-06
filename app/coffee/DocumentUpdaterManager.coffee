@@ -1,4 +1,5 @@
 request = require "request"
+_ = require "underscore"
 logger = require "logger-sharelatex"
 settings = require "settings-sharelatex"
 metrics = require("metrics-sharelatex")
@@ -23,7 +24,7 @@ module.exports = DocumentUpdaterManager =
 				catch error
 					return callback(error)
 				callback null, body?.lines, body?.version, body?.ranges, body?.ops
-			else if res.statusCode == 422 # Unprocessable Entity
+			else if res.statusCode in [404, 422]
 				err = new Error("doc updater could not load requested ops")
 				err.statusCode = res.statusCode
 				logger.warn {err, project_id, doc_id, url, fromVersion}, "doc updater could not load requested ops"
@@ -35,9 +36,12 @@ module.exports = DocumentUpdaterManager =
 				callback err
 
 	flushProjectToMongoAndDelete: (project_id, callback = ()->) ->
+		# this method is called when the last connected user leaves the project
 		logger.log project_id:project_id, "deleting project from document updater"
 		timer = new metrics.Timer("delete.mongo.project")
-		url = "#{settings.apis.documentupdater.url}/project/#{project_id}"
+		# flush the project in the background when all users have left
+		url = "#{settings.apis.documentupdater.url}/project/#{project_id}?background=true" +
+			(if settings.shutDownInProgress then "&shutdown=true" else "")
 		request.del url, (err, res, body)->
 			timer.done()
 			if err?
@@ -51,8 +55,10 @@ module.exports = DocumentUpdaterManager =
 				err.statusCode = res.statusCode
 				logger.error {err, project_id}, "document updater returned failure status code: #{res.statusCode}"
 				return callback(err)
-				
+
 	queueChange: (project_id, doc_id, change, callback = ()->)->
+		allowedKeys = [ 'doc', 'op', 'v', 'dupIfSource', 'meta', 'lastV', 'hash']
+		change = _.pick change, allowedKeys
 		jsonChange = JSON.stringify change
 		if jsonChange.indexOf("\u0000") != -1
 			error = new Error("null bytes found in op")
