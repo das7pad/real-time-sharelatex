@@ -70,7 +70,7 @@ describe "leaveDoc", ->
 				sinon.assert.neverCalledWith(logger.error, sinon.match.any, "not subscribed - shouldn't happen")
 
 			it "should have left the doc room", (done) ->
-				RealTimeClient.getConnectedClient @client.socket.sessionid, (error, client) =>
+				RealTimeClient.getConnectedClient @client.id, (error, client) =>
 					expect(@doc_id in client.rooms).to.equal false
 					done()
 
