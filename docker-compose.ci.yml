@@ -41,13 +41,13 @@ services:
       - npx
       - mocha
       - --exit
-      - test/acceptance/js/Init.js
       - --recursive
       - --reporter
       - xunit
       - --reporter-options
     command:
       - output=/home/node/acceptance.xml,suiteName='App Acceptance Tests'
+      - test/acceptance/js/Init.js
       - test/acceptance/js
     volumes:
       - ./output:/home/node:z
