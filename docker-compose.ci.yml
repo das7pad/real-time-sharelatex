@@ -41,6 +41,7 @@ services:
       - npx
       - mocha
       - --exit
+      - test/acceptance/js/Init.js
       - --recursive
       - --reporter
       - xunit
