@@ -12,7 +12,7 @@ express = require("express")
 session = require("express-session")
 redis = require("redis-sharelatex")
 if Settings.sentry?.dsn?
-	logger.initializeErrorReporting(Settings.sentry.dsn)
+	logger.initializeErrorReporting(Settings.sentry.dsn, Settings.sentry.options)
 
 sessionRedisClient = redis.createClient(Settings.redis.websessions)
 
