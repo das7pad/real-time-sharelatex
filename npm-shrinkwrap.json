@@ -2190,9 +2190,8 @@
       }
     },
     "redis-sharelatex": {
-      "version": "1.0.9",
-      "resolved": "https://registry.npmjs.org/redis-sharelatex/-/redis-sharelatex-1.0.9.tgz",
-      "integrity": "sha512-w5bL559k/+4eDldAbUXJ7E9SD1RGz20SDLEzO4A0rOXngLPtebXzmf2rIvIBUA0wnull1QQZL/31Ro0HDnbbYg==",
+      "version": "git+https://github.com/das7pad/redis-sharelatex.git#760b9345258a843000b544e3d1c36aa8f16b2033",
+      "from": "git+https://github.com/das7pad/redis-sharelatex.git#760b9345258a843000b544e3d1c36aa8f16b2033",
       "requires": {
         "async": "^2.5.0",
         "coffee-script": "1.8.0",
