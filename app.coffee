@@ -14,6 +14,11 @@ redis = require("redis-sharelatex")
 if Settings.sentry?.dsn?
 	logger.initializeErrorReporting(Settings.sentry.dsn, Settings.sentry.options)
 
+if Settings.catchErrors
+	process.removeAllListeners "uncaughtException"
+	process.on "uncaughtException", (error) ->
+		logger.error err: error, "uncaughtException"
+
 sessionRedisClient = redis.createClient(Settings.redis.websessions)
 
 RedisStore = require('connect-redis')(session)
@@ -87,10 +92,6 @@ host = Settings.internal.realTime.host
 server.listen port, host, (error) ->
 	throw error if error?
 	logger.info "realtime starting up, listening on #{host}:#{port}"
-
-# Stop huge stack traces in logs from all the socket.io parsing steps.
-Error.stackTraceLimit = 10
-
 
 shutdownCleanly = (signal) ->
 	io.sockets.clients (error, connectedClients) ->
