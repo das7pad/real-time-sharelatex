@@ -38,7 +38,6 @@
     "socket.io-client": "^2.2.0"
   },
   "devDependencies": {
-    "bunyan": "~0.22.3",
     "chai": "~1.9.1",
     "cookie-signature": "^1.0.5",
     "mocha": "^4.0.1",
