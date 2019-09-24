@@ -44,6 +44,8 @@ module.exports = Router =
 		app.post "/drain", httpAuth, HttpApiController.startDrain
 
 		session.on 'connection', (error, client, session) ->
+			ClientStoreManager.wrap(client)
+
 			if settings.shutDownInProgress
 				client.emit("connectionRejected", {message: "retry"})
 				client.disconnect()
@@ -76,8 +78,6 @@ module.exports = Router =
 				user = session.user
 			else
 				user = {_id: "anonymous-user"}
-
-			ClientStoreManager.wrap(client)
 
 			client.on "joinProject", (data = {}, callback) ->
 				if data.anonymousAccessToken
