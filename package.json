@@ -29,7 +29,7 @@
     "express": "^4.10.1",
     "express-session": "^1.9.1",
     "logger-sharelatex": "git+https://github.com/das7pad/logger-sharelatex.git#0a27a2785df04b627bb3557f01ac6e7573a97c61",
-    "metrics-sharelatex": "^2.2.0",
+    "metrics-sharelatex": "git+https://github.com/das7pad/metrics-sharelatex.git#866a23f83fcc3e812a70b4b4a88d445323e66988",
     "redis-sharelatex": "git+https://github.com/das7pad/redis-sharelatex.git#ac6c785d2391fe84e58f220b1fb609e62fac9ef4",
     "request": "^2.88.0",
     "session.socket.io": "^0.1.6",
