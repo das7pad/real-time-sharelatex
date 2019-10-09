@@ -322,7 +322,7 @@ exports.XMLHttpRequest = function() {
       if (typeof settings.password == "undefined") {
         settings.password = "";
       }
-      var authBuf = new Buffer(settings.user + ":" + settings.password);
+      var authBuf = Buffer.from(settings.user + ":" + settings.password);
       headers["Authorization"] = "Basic " + authBuf.toString("base64");
     }
 
