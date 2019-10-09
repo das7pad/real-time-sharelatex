@@ -10,7 +10,7 @@ module.exports = HttpApiController =
 				WebsocketLoadBalancer.emitToRoom req.params.project_id, req.params.message, payload
 		else
 			WebsocketLoadBalancer.emitToRoom req.params.project_id, req.params.message, req.body
-		res.send 204 # No content
+		res.sendStatus 204 # No content
 	
 	startDrain: (req, res, next) ->
 		io = req.app.get("io")
@@ -18,4 +18,4 @@ module.exports = HttpApiController =
 		rate = parseFloat(rate) || 0
 		logger.log {rate}, "setting client drain rate"
 		DrainManager.startDrain io, rate
-		res.send 204
+		res.sendStatus 204

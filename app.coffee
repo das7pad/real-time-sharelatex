@@ -48,7 +48,7 @@ app.get "/", (req, res, next) ->
 
 app.get "/status", (req, res, next) ->
 	if Settings.shutDownInProgress
-		res.send 503 # Service unavailable
+		res.sendStatus 503 # Service unavailable
 	else
 		res.send "real-time-sharelatex is alive"
 
