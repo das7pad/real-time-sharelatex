@@ -27,9 +27,12 @@ clean_build:
 clean:
 
 	rm -f app.js
+	rm -f app.map
 	rm -rf app/js
-	rm -rf test/unit/js
 	rm -rf test/acceptance/js
+	rm -rf test/load/js
+	rm -rf test/smoke/js
+	rm -rf test/unit/js
 
 test: test_unit test_acceptance
 
@@ -48,8 +51,47 @@ test_clean:
 
 test_acceptance_pre_run:
 
-build_app:
-	npm run compile:all
+COFFEE := npx coffee --map
+
+build_app: compile_full
+
+compile_full: compile_app
+compile_full: compile_tests
+
+COFFEE_DIRS_TESTS := $(wildcard test/*/coffee)
+COMPILE_TESTS := $(addprefix compile/,$(COFFEE_DIRS_TESTS))
+compile_app: app.js compile/app/coffee
+compile_tests: $(COMPILE_TESTS)
+
+compile/app/coffee $(COMPILE_TESTS): compile/%coffee:
+	$(COFFEE) --output $*js --compile $*coffee
+
+COFFEE_FILES := $(shell find app/coffee $(COFFEE_DIRS_TESTS) -name '*.coffee')
+JS_FILES := app.js $(subst /coffee,/js,$(subst .coffee,.js,$(COFFEE_FILES)))
+compile: $(JS_FILES)
+
+app.js: app.coffee
+	$(COFFEE) --compile $<
+
+app/js/%.js: app/coffee/%.coffee
+	@mkdir -p $(@D)
+	$(COFFEE) --compile -o $(@D) $<
+
+test/acceptance/js/%.js: test/acceptance/coffee/%.coffee
+	@mkdir -p $(@D)
+	$(COFFEE) --compile -o $(@D) $<
+
+test/load/js/%.js: test/load/coffee/%.coffee
+	@mkdir -p $(@D)
+	$(COFFEE) --compile -o $(@D) $<
+
+test/smoke/js/%.js: test/smoke/coffee/%.coffee
+	@mkdir -p $(@D)
+	$(COFFEE) --compile -o $(@D) $<
+
+test/unit/js/%.js: test/unit/coffee/%.coffee
+	@mkdir -p $(@D)
+	$(COFFEE) --compile -o $(@D) $<
 
 build:
 	docker build --tag ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER) \
