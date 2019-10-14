@@ -877,11 +877,11 @@
       "integrity": "sha1-Yzwsg+PaQqUC9SRmAiSA9CCCYd4="
     },
     "ioredis": {
-      "version": "4.11.2",
-      "resolved": "https://registry.npmjs.org/ioredis/-/ioredis-4.11.2.tgz",
-      "integrity": "sha512-2lQM1jpTzoTPg9Lj+ayfcIn8rdvGwgNP/nzeJ7IW4va/ExqxttRnTlUaxa8jOsj/e4NYKtVkbuhEAvOVPwjztA==",
+      "version": "4.14.1",
+      "resolved": "https://registry.npmjs.org/ioredis/-/ioredis-4.14.1.tgz",
+      "integrity": "sha512-94W+X//GHM+1GJvDk6JPc+8qlM7Dul+9K+lg3/aHixPN7ZGkW6qlvX0DG6At9hWtH2v3B32myfZqWoANUJYGJA==",
       "requires": {
-        "cluster-key-slot": "^1.0.6",
+        "cluster-key-slot": "^1.1.0",
         "debug": "^4.1.1",
         "denque": "^1.1.0",
         "lodash.defaults": "^4.2.0",
@@ -1439,12 +1439,12 @@
       }
     },
     "redis-sharelatex": {
-      "version": "git+https://github.com/das7pad/redis-sharelatex.git#ac6c785d2391fe84e58f220b1fb609e62fac9ef4",
-      "from": "git+https://github.com/das7pad/redis-sharelatex.git#ac6c785d2391fe84e58f220b1fb609e62fac9ef4",
+      "version": "git+https://github.com/das7pad/redis-sharelatex.git#ebedde93447c6d6ad826e8950760f76ec2df95bb",
+      "from": "git+https://github.com/das7pad/redis-sharelatex.git#ebedde93447c6d6ad826e8950760f76ec2df95bb",
       "requires": {
         "async": "^2.5.0",
         "coffee-script": "1.8.0",
-        "ioredis": "~4.11.1",
+        "ioredis": "~4.14.1",
         "redis-sentinel": "0.1.1",
         "underscore": "1.7.0"
       },
