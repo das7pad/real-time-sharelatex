@@ -10,7 +10,7 @@ WORKDIR /app
 
 COPY docker_cleanup.sh /
 
-COPY package.json npm-shrinkwrap.json /app/
+COPY package.json package-lock.json /app/
 
 RUN /docker_cleanup.sh npm ci
 
