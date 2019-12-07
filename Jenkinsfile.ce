@@ -25,11 +25,6 @@ pipeline {
                 sh 'docker pull $DOCKER_REGISTRY/$IMAGE_NODE'
                 sh 'docker tag $DOCKER_REGISTRY/$IMAGE_NODE $IMAGE_NODE'
             }
-            post {
-                cleanup {
-                    sh 'docker rmi --force $DOCKER_REGISTRY/$IMAGE_NODE'
-                }
-            }
         }
         stage('Pull Cache') {
           when {
@@ -166,7 +161,6 @@ pipeline {
   post {
     cleanup {
       sh 'make clean_ci'
-      sh 'docker rmi --force $IMAGE_NODE'
     }
   }
 }
