@@ -21,19 +21,3 @@ COPY . /app
 RUN /docker_cleanup.sh make build_app
 
 USER node
-
-FROM base as prod
-
-RUN /docker_cleanup.sh npm ci --only=prod
-
-ADD build_artifacts.tar.gz /app
-
-USER node
-
-ARG RELEASE
-ARG COMMIT
-ENV \
-    SERVICE_NAME="real-time" \
-    RELEASE=${RELEASE} \
-    SENTRY_RELEASE=${RELEASE} \
-    COMMIT=${COMMIT}
