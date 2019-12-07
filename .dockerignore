@@ -55,3 +55,9 @@
 !/test/unit/coffee
 # app #
 #######
+
+###################
+# build artifacts #
+!/build_artifacts.tar.gz
+# build artifacts #
+###################

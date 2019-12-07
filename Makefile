@@ -21,6 +21,9 @@ clean_ci: test_clean
 clean_build:
 	docker rmi \
 		ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER) \
+		ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-base \
+		ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-dev \
+		ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-prod \
 		ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-cache \
 		--force
 
@@ -51,7 +54,7 @@ test_clean:
 
 test_acceptance_pre_run:
 
-COFFEE := npx coffee --map
+COFFEE := npx coffee
 
 build_app: compile_full
 
@@ -93,12 +96,45 @@ test/unit/js/%.js: test/unit/coffee/%.coffee
 	@mkdir -p $(@D)
 	$(COFFEE) --compile -o $(@D) $<
 
-build:
-	docker build --tag ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER) \
+build: clean_build_artifacts
+	docker build \
 		--cache-from ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-cache \
+		--tag ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-base \
+		--target base \
+		.
+
+	docker build \
+		--cache-from ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-base \
+		--tag ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER) \
+		--tag ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-dev \
+		--target dev \
+		.
+
+build_prod: clean_build_artifacts
+	docker run \
+		--rm \
+		--entrypoint tar \
+		ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-dev \
+			--create \
+			--gzip \
+			app.js \
+			app/js \
+			config \
+		> build_artifacts.tar.gz
+
+	docker build \
 		--build-arg RELEASE=$(RELEASE) \
 		--build-arg COMMIT=$(COMMIT) \
+		--cache-from ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-base \
+		--cache-from ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-dev \
+		--cache-from ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-cache \
+		--tag ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)-prod \
+		--target prod \
 		.
+
+clean_ci: clean_build_artifacts
+clean_build_artifacts:
+	rm -f build_artifacts.tar.gz
 
 tar:
 	$(DOCKER_COMPOSE) up tar
