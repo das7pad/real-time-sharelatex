@@ -18,3 +18,5 @@ ENV \
     RELEASE=${RELEASE} \
     SENTRY_RELEASE=${RELEASE} \
     COMMIT=${COMMIT}
+
+CMD ["node", "--expose-gc", "app.js"]
