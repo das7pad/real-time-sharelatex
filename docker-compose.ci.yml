@@ -52,19 +52,14 @@ services:
     volumes:
       - ./output:/home/node:z
 
-  tar:
-    build: .
-    image: ci/$PROJECT_NAME:$BRANCH_NAME-$BUILD_NUMBER
-    volumes:
-      - ./:/tmp/build/
-    command: tar -czf /tmp/build/build.tar.gz --exclude=build.tar.gz --exclude-vcs .
-    user: root
-
   redis_documentupdater:
     image: redis
+
   redis_pubsub:
     image: redis
+
   redis_realtime:
     image: redis
+
   redis_websessions:
     image: redis

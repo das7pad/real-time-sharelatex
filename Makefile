@@ -37,11 +37,14 @@ clean:
 	rm -rf test/smoke/js
 	rm -rf test/unit/js
 
-test: test_unit test_acceptance
+test: lint
+lint:
 
+test: test_unit
 test_unit:
 	$(DOCKER_COMPOSE) run --rm test_unit
 
+test: test_acceptance
 test_acceptance: test_clean test_acceptance_pre_run test_acceptance_run
 
 test_acceptance_run:
@@ -135,11 +138,4 @@ clean_ci: clean_build_artifacts
 clean_build_artifacts:
 	rm -f build_artifacts.tar.gz
 
-tar:
-	$(DOCKER_COMPOSE) up tar
-
-publish:
-
-	docker push $(DOCKER_REPO)/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)
-
-.PHONY: clean test test_unit test_acceptance test_clean build publish
+.PHONY: clean test test_unit test_acceptance test_clean build
