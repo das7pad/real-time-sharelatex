@@ -5,3 +5,5 @@ real-time
 --dependencies=redis_documentupdater,redis_pubsub,redis_realtime,redis_websessions
 --docker-repos=gcr.io/overleaf-ops
 --build-target=docker
+--env-pass-through=
+--public-repo=True

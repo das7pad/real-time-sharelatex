@@ -46,10 +46,10 @@ describe 'WebsocketController', ->
 				inc: sinon.stub()
 				set: sinon.stub()
 			"./RoomManager": @RoomManager = {}
-	
+
 	afterEach ->
 		tk.reset()
-	
+
 	describe "joinProject", ->
 		describe "when authorised", ->
 			beforeEach ->
@@ -62,61 +62,54 @@ describe 'WebsocketController', ->
 				}
 				@privilegeLevel = "owner"
 				@ConnectedUsersManager.updateUserPosition = sinon.stub().callsArg(4)
-				@WebApiManager.joinProject = sinon.stub().callsArgWith(2, null, @project, @privilegeLevel)
+				@isRestrictedUser = true
+				@WebApiManager.joinProject = sinon.stub().callsArgWith(2, null, @project, @privilegeLevel, @isRestrictedUser)
 				@RoomManager.joinProject = sinon.stub().callsArg(2)
 				@WebsocketController.joinProject @client, @user, @project_id, @callback
-				
+
 			it "should load the project from web", ->
 				@WebApiManager.joinProject
 					.calledWith(@project_id, @user)
 					.should.equal true
-					
+
 			it "should join the project room", ->
 				@RoomManager.joinProject.calledWith(@client, @project_id).should.equal true
-					
+
 			it "should set the privilege level on the client", ->
 				@clientStore["privilege_level"].should.equal @privilegeLevel
-					
 			it "should set the user's id on the client", ->
 				@clientStore["user_id"].should.equal @user._id
-					
 			it "should set the user's email on the client", ->
 				@clientStore["email"].should.equal @user.email
-					
 			it "should set the user's first_name on the client", ->
 				@clientStore["first_name"].should.equal @user.first_name
-				
 			it "should set the user's last_name on the client", ->
 				@clientStore["last_name"].should.equal @user.last_name
-					
 			it "should set the user's sign up date on the client", ->
 				@clientStore["signup_date"].should.equal @user.signUpDate
-					
 			it "should set the user's login_count on the client", ->
 				@clientStore["login_count"].should.equal @user.loginCount
-				
 			it "should set the connected time on the client", ->
 				@clientStore["connected_time"].should.equal new Date()
-				
 			it "should set the project_id on the client", ->
 				@clientStore["project_id"].should.equal @project_id
-				
 			it "should set the project owner id on the client", ->
 				@clientStore["owner_id"].should.equal @owner_id
-				
+			it "should set the is_restricted_user flag on the client", ->
+				@clientStore["is_restricted_user"].should.equal @isRestrictedUser
 			it "should call the callback with the project, privilegeLevel and protocolVersion", ->
 				@callback
 					.calledWith(null, @project, @privilegeLevel, @WebsocketController.PROTOCOL_VERSION)
 					.should.equal true
-					
+
 			it "should mark the user as connected in ConnectedUsersManager", ->
 				@ConnectedUsersManager.updateUserPosition
 					.calledWith(@project_id, @client.id, @user, null)
 					.should.equal true
-					
+
 			it "should increment the join-project metric", ->
 				@metrics.inc.calledWith("editor.join-project").should.equal true
-				
+
 		describe "when not authorized", ->
 			beforeEach ->
 				@WebApiManager.joinProject = sinon.stub().callsArgWith(2, null, null, null)
@@ -146,30 +139,30 @@ describe 'WebsocketController', ->
 			@client.params.user_id = @user_id
 			@WebsocketController.FLUSH_IF_EMPTY_DELAY = 0
 			tk.reset() # Allow setTimeout to work.
-			
+
 		describe "when the project is empty", ->
 			beforeEach (done) ->
 				@clientsInRoom = []
 				@WebsocketController.leaveProject @io, @client, done
-				
+
 			it "should end clientTracking.clientDisconnected to the project room", ->
 				@WebsocketLoadBalancer.emitToRoom
 					.calledWith(@project_id, "clientTracking.clientDisconnected", @client.id)
 					.should.equal true
-			
+
 			it "should mark the user as disconnected", ->
 				@ConnectedUsersManager.markUserAsDisconnected
 					.calledWith(@project_id, @client.id)
 					.should.equal true
-			
+
 			it "should flush the project in the document updater", ->
 				@DocumentUpdaterManager.flushProjectToMongoAndDelete
 					.calledWith(@project_id)
 					.should.equal true
-					
+
 			it "should increment the leave-project metric", ->
 				@metrics.inc.calledWith("editor.leave-project").should.equal true
-			
+
 			it "should track the disconnection in RoomManager", ->
 				@RoomManager.leaveProjectAndDocs
 					.calledWith(@client)
@@ -179,7 +172,7 @@ describe 'WebsocketController', ->
 			beforeEach ->
 				@clientsInRoom = ["mock-remaining-client"]
 				@WebsocketController.leaveProject @io, @client
-				
+
 			it "should not flush the project in the document updater", ->
 				@DocumentUpdaterManager.flushProjectToMongoAndDelete
 					.called.should.equal false
@@ -240,8 +233,9 @@ describe 'WebsocketController', ->
 			@ops = ["mock", "ops"]
 			@ranges = { "mock": "ranges" }
 			@options = {}
-			
+
 			@client.params.project_id = @project_id
+			@client.params.is_restricted_user = false
 			@AuthorizationManager.addAccessToDoc = sinon.stub()
 			@AuthorizationManager.assertClientCanViewProject = sinon.stub().callsArgWith(1, null)
 			@DocumentUpdaterManager.getDocument = sinon.stub().callsArgWith(3, null, @doc_lines, @version, @ranges, @ops)
@@ -283,7 +277,7 @@ describe 'WebsocketController', ->
 			beforeEach ->
 				@fromVersion = 40
 				@WebsocketController.joinDoc @client, @doc_id, @fromVersion, @options, @callback
-					
+
 			it "should get the document from the DocumentUpdaterManager with fromVersion", ->
 				@DocumentUpdaterManager.getDocument
 					.calledWith(@project_id, @doc_id, @fromVersion)
@@ -293,7 +287,7 @@ describe 'WebsocketController', ->
 			beforeEach ->
 				@doc_lines.push ["räksmörgås"]
 				@WebsocketController.joinDoc @client, @doc_id, -1, @options, @callback
-						
+
 			it "should call the callback with the escaped lines", ->
 				escaped_lines = @callback.args[0][1]
 				escaped_word = escaped_lines.pop()
@@ -335,44 +329,54 @@ describe 'WebsocketController', ->
 			beforeEach ->
 				@AuthorizationManager.assertClientCanViewProject = sinon.stub().callsArgWith(1, @err = new Error("not authorized"))
 				@WebsocketController.joinDoc @client, @doc_id, -1, @options, @callback
-				
+
 			it "should call the callback with an error", ->
 				@callback.calledWith(@err).should.equal true
-			
+
 			it "should not call the DocumentUpdaterManager", ->
 				@DocumentUpdaterManager.getDocument.called.should.equal false
-				
+
+		describe "with a restricted client", ->
+			beforeEach ->
+				@ranges.comments = [{op: {a: 1}}, {op: {a: 2}}]
+				@client.params.is_restricted_user = true
+				@WebsocketController.joinDoc @client, @doc_id, -1, @options, @callback
+
+			it "should overwrite ranges.comments with an empty list", ->
+				ranges = @callback.args[0][4]
+				expect(ranges.comments).to.deep.equal []
+
 	describe "leaveDoc", ->
 		beforeEach ->
-			@doc_id = "doc-id-123"			
+			@doc_id = "doc-id-123"
 			@client.params.project_id = @project_id
 			@RoomManager.leaveDoc = sinon.stub()
 			@WebsocketController.leaveDoc @client, @doc_id, @callback
-			
+
 		it "should remove the client from the doc_id room", ->
 			@RoomManager.leaveDoc
 				.calledWith(@client, @doc_id).should.equal true
-				
+
 		it "should call the callback", ->
 			@callback.called.should.equal true
-			
+
 		it "should increment the leave-doc metric", ->
 			@metrics.inc.calledWith("editor.leave-doc").should.equal true
-			
+
 	describe "getConnectedUsers", ->
 		beforeEach ->
 			@client.params.project_id = @project_id
 			@users = ["mock", "users"]
 			@WebsocketLoadBalancer.emitToRoom = sinon.stub()
 			@ConnectedUsersManager.getConnectedUsers = sinon.stub().callsArgWith(1, null, @users)
-			
+
 		describe "when authorized", ->
 			beforeEach (done) ->
 				@AuthorizationManager.assertClientCanViewProject = sinon.stub().callsArgWith(1, null)
 				@WebsocketController.getConnectedUsers @client, (args...) =>
 					@callback(args...)
 					done()
-				
+
 			it "should check that the client is authorized to view the project", ->
 				@AuthorizationManager.assertClientCanViewProject
 					.calledWith(@client)
@@ -387,26 +391,40 @@ describe 'WebsocketController', ->
 				@ConnectedUsersManager.getConnectedUsers
 					.calledWith(@project_id)
 					.should.equal true
-					
+
 			it "should return the users", ->
 				@callback.calledWith(null, @users).should.equal true
-				
+
 			it "should increment the get-connected-users metric", ->
 				@metrics.inc.calledWith("editor.get-connected-users").should.equal true
-			
+
 		describe "when not authorized", ->
 			beforeEach ->
 				@AuthorizationManager.assertClientCanViewProject = sinon.stub().callsArgWith(1, @err = new Error("not authorized"))
 				@WebsocketController.getConnectedUsers @client, @callback
-					
+
 			it "should not get the connected users for the project", ->
 				@ConnectedUsersManager.getConnectedUsers
 					.called
 					.should.equal false
-					
+
 			it "should return an error", ->
 				@callback.calledWith(@err).should.equal true
-				
+
+		describe "when restricted user", ->
+			beforeEach ->
+				@client.params.is_restricted_user = true
+				@AuthorizationManager.assertClientCanViewProject = sinon.stub().callsArgWith(1, null)
+				@WebsocketController.getConnectedUsers @client, @callback
+
+			it "should return an empty array of users", ->
+				@callback.calledWith(null, []).should.equal true
+
+			it "should not get the connected users for the project", ->
+				@ConnectedUsersManager.getConnectedUsers
+					.called
+					.should.equal false
+
 	describe "updateClientPosition", ->
 		beforeEach ->
 			@WebsocketLoadBalancer.emitToRoom = sinon.stub()
@@ -429,7 +447,7 @@ describe 'WebsocketController', ->
 				}
 				@WebsocketController.updateClientPosition @client, @update
 
-				@populatedCursorData = 
+				@populatedCursorData =
 					doc_id: @doc_id,
 					id: @client.id
 					name: "#{@first_name} #{@last_name}"
@@ -468,7 +486,7 @@ describe 'WebsocketController', ->
 				}
 				@WebsocketController.updateClientPosition @client, @update
 
-				@populatedCursorData = 
+				@populatedCursorData =
 					doc_id: @doc_id,
 					id: @client.id
 					name: "#{@first_name}"
@@ -507,7 +525,7 @@ describe 'WebsocketController', ->
 				}
 				@WebsocketController.updateClientPosition @client, @update
 
-				@populatedCursorData = 
+				@populatedCursorData =
 					doc_id: @doc_id,
 					id: @client.id
 					name: "#{@last_name}"
@@ -606,7 +624,7 @@ describe 'WebsocketController', ->
 
 			it "should call the callback", ->
 				@callback.called.should.equal true
-			
+
 			it "should increment the doc updates", ->
 				@metrics.inc.calledWith("editor.doc-update").should.equal true
 
@@ -624,7 +642,7 @@ describe 'WebsocketController', ->
 
 			it "should call the callback with the error", ->
 				@callback.calledWith(@error).should.equal true
-				
+
 		describe "when not authorized", ->
 			beforeEach ->
 				@client.disconnect = sinon.stub()
@@ -648,7 +666,7 @@ describe 'WebsocketController', ->
 			@comment_update = { op: [{c: "bar", p: 132}] }
 			@AuthorizationManager.assertClientCanEditProjectAndDoc = sinon.stub()
 			@AuthorizationManager.assertClientCanViewProjectAndDoc = sinon.stub()
-			
+
 		describe "with a read-write client", ->
 			it "should return successfully", (done) ->
 				@AuthorizationManager.assertClientCanEditProjectAndDoc.yields(null)
@@ -663,7 +681,7 @@ describe 'WebsocketController', ->
 				@WebsocketController._assertClientCanApplyUpdate @client, @doc_id, @edit_update, (error) ->
 					expect(error.message).to.equal "not authorized"
 					done()
-		
+
 		describe "with a read-only client and a comment op", ->
 			it "should return successfully", (done) ->
 				@AuthorizationManager.assertClientCanEditProjectAndDoc.yields(new Error("not authorized"))
@@ -671,7 +689,7 @@ describe 'WebsocketController', ->
 				@WebsocketController._assertClientCanApplyUpdate @client, @doc_id, @comment_update, (error) ->
 					expect(error).to.be.null
 					done()
-		
+
 		describe "with a totally unauthorized client", ->
 			it "should return an error", (done) ->
 				@AuthorizationManager.assertClientCanEditProjectAndDoc.yields(new Error("not authorized"))
