@@ -9,7 +9,7 @@ pipeline {
   environment {
     DOCKER_COMPOSE_FLAGS = "-f docker-compose.ci.yml"
     IMAGE_CI = "ci/real-time:$BRANCH_NAME-$BUILD_NUMBER"
-    IMAGE_NODE = 'node:12.13.1'
+    IMAGE_NODE = 'node:12.14.0'
   }
 
   stages {

@@ -1,6 +1,6 @@
 real-time
 --language=coffeescript
---node-version=12.13.1
+--node-version=12.14.0
 --acceptance-creds=None
 --dependencies=redis_documentupdater,redis_pubsub,redis_realtime,redis_websessions
 --docker-repos=gcr.io/overleaf-ops
