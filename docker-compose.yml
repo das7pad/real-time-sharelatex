@@ -16,7 +16,7 @@ services:
     user: node
 
   test_acceptance:
-    build: .
+    image: node:12.14.0
     volumes:
       - .:/app
     working_dir: /app

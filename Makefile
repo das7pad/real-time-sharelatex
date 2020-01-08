@@ -7,6 +7,7 @@ BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 COMMIT ?= $(shell git rev-parse HEAD)
 RELEASE ?= $(shell git describe --tags | sed 's/-g/+/;s/^v//')
 PROJECT_NAME = real-time
+BUILD_DIR_NAME = $(shell pwd | xargs basename | tr -cd '[a-zA-Z0-9_.\-]')
 DOCKER_COMPOSE_FLAGS ?= -f docker-compose.yml
 DOCKER_COMPOSE := BUILD_NUMBER=$(BUILD_NUMBER) \
 	BRANCH_NAME=$(BRANCH_NAME) \
@@ -16,7 +17,6 @@ DOCKER_COMPOSE := BUILD_NUMBER=$(BUILD_NUMBER) \
 
 clean_ci: clean
 clean_ci: clean_build
-clean_ci: test_clean
 
 clean_build:
 	docker rmi \
@@ -40,22 +40,36 @@ clean:
 test: lint
 lint:
 
+UNIT_TEST_DOCKER_COMPOSE ?= \
+	COMPOSE_PROJECT_NAME=unit_test_$(BUILD_DIR_NAME) $(DOCKER_COMPOSE)
+
 test: test_unit
 test_unit:
-	$(DOCKER_COMPOSE) run --rm test_unit
+	$(UNIT_TEST_DOCKER_COMPOSE) run --rm test_unit
+
+clean_ci: clean_test_unit
+clean_test_unit:
+	$(UNIT_TEST_DOCKER_COMPOSE) down --timeout 0
+
+ACCEPTANCE_TEST_DOCKER_COMPOSE ?= \
+	COMPOSE_PROJECT_NAME=acceptance_test_$(BUILD_DIR_NAME) $(DOCKER_COMPOSE)
 
 test: test_acceptance
-test_acceptance: test_clean test_acceptance_pre_run test_acceptance_run
+test_acceptance: test_acceptance_app
+test_acceptance_run: test_acceptance_app_run
+test_acceptance_app: clean_test_acceptance_app
+test_acceptance_app: test_acceptance_app_run
 
-test_acceptance_run:
-	$(DOCKER_COMPOSE) run --rm test_acceptance
+test_acceptance_app_run:
+	$(ACCEPTANCE_TEST_DOCKER_COMPOSE) run --rm test_acceptance
 
-clean_test_acceptance:
-
-test_clean:
-	$(DOCKER_COMPOSE) down -v -t 0
-
+test_acceptance_app_run: test_acceptance_pre_run
 test_acceptance_pre_run:
+
+clean_ci: clean_test_acceptance
+clean_test_acceptance: clean_test_acceptance_app
+clean_test_acceptance_app:
+	$(ACCEPTANCE_TEST_DOCKER_COMPOSE) down --volumes --timeout 0
 
 COFFEE := npx coffee
 
