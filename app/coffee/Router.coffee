@@ -68,7 +68,7 @@ module.exports = Router =
 			client.emit("connectionAccepted")
 
 			metrics.inc('socket-io.connection')
-			metrics.gauge('socket-io.clients', io.sockets.clients()?.length)
+			metrics.gauge('socket-io.clients', Object.keys(io.sockets.connected).length)
 
 			logger.log session: session, client_id: client.id, "client connected"
 
@@ -90,7 +90,7 @@ module.exports = Router =
 
 			client.on "disconnect", () ->
 				metrics.inc('socket-io.disconnect')
-				metrics.gauge('socket-io.clients', io.sockets.clients()?.length - 1)
+				metrics.gauge('socket-io.clients', Object.keys(io.sockets.connected).length - 1)
 				cleanupCallback = () ->
 					ClientStoreManager.unwrap(client)
 
