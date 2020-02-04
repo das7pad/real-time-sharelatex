@@ -48,8 +48,7 @@ describe "leaveProject", ->
 					
 				(cb) =>
 					# The API waits a little while before flushing changes
-					setTimeout done, 1000
-					
+					setTimeout cb, 1000
 			], done
 
 		it "should emit a disconnect message to the room", ->
@@ -93,7 +92,7 @@ describe "leaveProject", ->
 					
 				(cb) =>
 					# The API waits a little while before flushing changes
-					setTimeout done, 1000
+					setTimeout cb, 1000
 			], done
 
 		it "should flush the project to the document updater", ->
