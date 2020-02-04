@@ -10,17 +10,17 @@ describe "DrainManager", ->
 			"logger-sharelatex": @logger = log: sinon.stub()
 		@io =
 			sockets:
-				clients: sinon.stub()
+				connected: {}
 
 	describe "startDrainTimeWindow", ->
 		beforeEach ->
-			@clients = []
+			@clients = {}
 			for i in [0..5399]
 				@clients[i] = {
 					id: i
 					emit: sinon.stub()
 				}
-			@io.sockets.clients.returns @clients
+			@io.sockets.connected = @clients
 			@DrainManager.startDrain = sinon.stub()
 
 		it "should set a drain rate fast enough", (done)->

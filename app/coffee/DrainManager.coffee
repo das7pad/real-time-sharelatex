@@ -3,7 +3,7 @@ logger = require "logger-sharelatex"
 module.exports = DrainManager =
 
 	startDrainTimeWindow: (io, minsToDrain)->
-		drainPerMin = io.sockets.clients().length / minsToDrain
+		drainPerMin = Object.keys(io.sockets.connected).length / minsToDrain
 		DrainManager.startDrain(io, Math.max(drainPerMin / 60, 4)) # enforce minimum drain rate
 
 	startDrain: (io, rate) ->
