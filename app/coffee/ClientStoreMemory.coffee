@@ -1,9 +1,9 @@
 module.exports = ClientStoreMemory =
 	init: (client) ->
-		client.data = {}
+		client.data = new Map()
 
 	clear: (client) ->
-		delete client.data
+		client.data.clear()
 
 	set: (key, value, callback = (error) ->) ->
 		this.data[key] = value
