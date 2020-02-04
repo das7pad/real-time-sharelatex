@@ -100,7 +100,8 @@ describe "DocumentUpdaterController", ->
 				meta: source: @sourceClient.id
 				v: @version = 42
 				doc: @doc_id
-			@io.to = sinon.stub().returns(connected: clients)
+			@io.sockets = {connected: clients}
+			@io.to = sinon.stub().returns(emit: @room_emit = sinon.stub())
 		describe "normally", ->
 			beforeEach ->
 				@EditorUpdatesController._applyUpdateFromDocumentUpdater @io, @doc_id, @update
@@ -111,17 +112,27 @@ describe "DocumentUpdaterController", ->
 					.should.equal true
 				@sourceClient.emit.calledOnce.should.equal true
 
-			it "should get the clients connected to the document", ->
+			it "should emit from the source client to the clients connected to the document", ->
+				@sourceClient.to
+					.calledWith(@doc_id)
+					.should.equal true
+				@sourceClient.emit_to
+						.calledWith("otUpdateApplied", @update)
+						.should.equal true
+
+		describe "from a remote client", ->
+			beforeEach ->
+				@update.meta.source = 'some-remote-client'
+				@EditorUpdatesController._applyUpdateFromDocumentUpdater @io, @doc_id, @update
+
+			it "should emit to the clients connected to the document", ->
 				@io.to
 					.calledWith(@doc_id)
 					.should.equal true
+				@room_emit
+					.calledWith("otUpdateApplied", @update)
+					.should.equal true
 
-			it "should send the full update to the other clients", ->
-				for client in @otherClients
-					client.emit
-						.calledWith("otUpdateApplied", @update)
-						.should.equal true
-		
 		describe "with a duplicate op", ->
 			beforeEach ->
 				@update.dup = true
@@ -133,10 +144,12 @@ describe "DocumentUpdaterController", ->
 					.should.equal true
 
 			it "should not send anything to the other clients (they've already had the op)", ->
-				for client in @otherClients
-					client.emit
+				@sourceClient.emit_to
 						.calledWith("otUpdateApplied")
 						.should.equal false
+				@room_emit
+					.calledWith("otUpdateApplied")
+					.should.equal false
 
 	describe "_processErrorFromDocumentUpdater", ->
 		beforeEach ->
@@ -144,7 +157,8 @@ describe "DocumentUpdaterController", ->
 			client_mapping = {}
 			client_mapping[@clients[0].id] = @clients[0]
 			client_mapping[@clients[1].id] = @clients[1]
-			@io.to = sinon.stub().returns(connected: client_mapping)
+			@io.sockets = {connected: client_mapping}
+			@io.to = sinon.stub().returns(clients: sinon.stub().yields(null, [@clients[0].id, @clients[1].id]))
 			@EditorUpdatesController._processErrorFromDocumentUpdater @io, @doc_id, "Something went wrong"
 
 		it "should log a warning", ->

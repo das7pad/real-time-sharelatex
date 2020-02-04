@@ -7,6 +7,7 @@ module.exports = class MockClient
 		@attributes = {}
 		@join = sinon.stub()
 		@emit = sinon.stub()
+		@to = sinon.stub().returns({emit: @emit_to = sinon.stub()})
 		@disconnect = sinon.stub()
 		@id = idCounter++
 	set : (key, value, callback) ->
