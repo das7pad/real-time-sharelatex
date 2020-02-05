@@ -91,7 +91,8 @@ module.exports = RoomManager =
             cb(clients?.length || 0)
 
     _roomsClientIsIn: (client) ->
-        return Object.keys(client.rooms)
+        # skip the socket id
+        return Object.keys(client.rooms).slice(1)
 
     _clientAlreadyInRoom: (client, room) ->
         return client.rooms.hasOwnProperty(room)

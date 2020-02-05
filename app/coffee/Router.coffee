@@ -91,6 +91,8 @@ module.exports = Router =
 			client.on "disconnect", () ->
 				metrics.inc('socket-io.disconnect')
 				metrics.gauge('socket-io.clients', Object.keys(io.sockets.connected).length - 1)
+
+			client.on "disconnecting", () ->
 				cleanupCallback = () ->
 					ClientStoreManager.unwrap(client)
 
