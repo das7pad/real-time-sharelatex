@@ -32,7 +32,9 @@ HealthCheckManager = require("./app/js/HealthCheckManager")
 app = express()
 
 server = require('http').createServer(app)
-io = require('socket.io').listen(server)
+io = require('socket.io')(server, {
+	cookie: false,
+})
 
 # Bind to sessions
 sessionStore = new RedisStore(client: sessionRedisClient)
