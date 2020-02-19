@@ -91,16 +91,12 @@ module.exports = Router =
 			client.on "disconnect", () ->
 				metrics.inc('socket-io.disconnect')
 				metrics.gauge('socket-io.clients', Object.keys(io.sockets.connected).length - 1)
+				ClientStoreManager.unwrap(client)
 
 			client.on "disconnecting", () ->
-				cleanupCallback = () ->
-					ClientStoreManager.unwrap(client)
-
 				WebsocketController.leaveProject io, client, (err) ->
 					if err?
-						Router._handleError cleanupCallback, err, client, "leaveProject"
-					else
-						cleanupCallback()
+						Router._handleError (() ->), err, client, "leaveProject"
 
 			# Variadic. The possible arguments:
 			# doc_id, callback
