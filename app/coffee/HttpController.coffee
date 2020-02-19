@@ -1,4 +1,3 @@
-Utils = require "./Utils"
 async = require "async"
 
 module.exports = HttpController =
@@ -9,7 +8,7 @@ module.exports = HttpController =
 	# should provide appropriate coverage.
 	_getConnectedClientView: (ioClient, callback = (error, client) ->) ->
 		client_id = ioClient.id
-		Utils.getClientAttributes ioClient, [
+		ioClient.getMulti [
 			"project_id", "user_id", "first_name", "last_name", "email", "connected_time"
 		], (error, {project_id, user_id, first_name, last_name, email, connected_time}) ->
 			return callback(error) if error?

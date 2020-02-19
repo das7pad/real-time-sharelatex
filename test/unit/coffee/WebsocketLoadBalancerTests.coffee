@@ -3,6 +3,12 @@ sinon = require('sinon')
 require('chai').should()
 modulePath = require('path').join __dirname, '../../../app/js/WebsocketLoadBalancer'
 
+fakeGet = (restricted) ->
+	(field, cb) ->
+		if field != 'is_restricted_user'
+			return cb(new Error('not set'))
+		cb(null, restricted)
+
 describe "WebsocketLoadBalancer", ->
 	beforeEach ->
 		@rclient = {}
@@ -10,7 +16,7 @@ describe "WebsocketLoadBalancer", ->
 		@WebsocketLoadBalancer = SandboxedModule.require modulePath, requires:
 			"./RedisClientManager":
 				createClientList: () => []
-			"logger-sharelatex": @logger = { log: sinon.stub(), error: sinon.stub() }
+			"logger-sharelatex": @logger = { log: sinon.stub(), error: sinon.stub(), err: sinon.stub() }
 			"./SafeJsonParse": @SafeJsonParse =
 				parse: (data, cb) => cb null, JSON.parse(data)
 			"./EventLogger": {checkEventOrder: sinon.stub()}
@@ -18,12 +24,6 @@ describe "WebsocketLoadBalancer", ->
 			"./RoomManager" : @RoomManager = {eventSource: sinon.stub().returns @RoomEvents}
 			"./ChannelManager": @ChannelManager = {publish: sinon.stub()}
 			"./ConnectedUsersManager": @ConnectedUsersManager = {refreshClient: sinon.stub()}
-			"./Utils": @Utils = {
-				getClientAttributes: sinon.spy(
-					(client, _attrs, callback) ->
-						callback(null, {is_restricted_user: !!client.__isRestricted})
-				)
-			}
 		@io = {}
 		@WebsocketLoadBalancer.rclientPubList = [{publish: sinon.stub()}]
 		@WebsocketLoadBalancer.rclientSubList = [{
@@ -34,6 +34,10 @@ describe "WebsocketLoadBalancer", ->
 		@room_id = "room-id"
 		@message = "otUpdateApplied"
 		@payload = ["argument one", 42]
+
+	afterEach ->
+		@logger.err.called.should.equal.false
+		@logger.error.called.should.equal.false
 
 	describe "emitToRoom", ->
 		beforeEach ->
@@ -86,8 +90,8 @@ describe "WebsocketLoadBalancer", ->
 		describe "with a designated room", ->
 			beforeEach ->
 				@io.sockets = {connected:
-					'client-id-1': {id: 'client-id-1', emit: @emit1 = sinon.stub()}
-					'client-id-2': {id: 'client-id-2', emit: @emit2 = sinon.stub()}
+					'client-id-1': {id: 'client-id-1', emit: @emit1 = sinon.stub(), get: fakeGet()}
+					'client-id-2': {id: 'client-id-2', emit: @emit2 = sinon.stub(), get: fakeGet()}
 				}
 				@io.to = sinon.stub().returns(
 					clients: sinon.stub().yields(null, ['client-id-1', 'client-id-2'])
@@ -108,9 +112,9 @@ describe "WebsocketLoadBalancer", ->
 		describe "with a designated room, and restricted clients, not restricted message", ->
 			beforeEach ->
 				@io.sockets = {connected:
-					'client-id-1': {id: 'client-id-1', emit: @emit1 = sinon.stub()}
-					'client-id-2': {id: 'client-id-2', emit: @emit2 = sinon.stub()}
-					'client-id-4': {id: 'client-id-4', emit: @emit4 = sinon.stub(), __isRestricted: true}
+					'client-id-1': {id: 'client-id-1', emit: @emit1 = sinon.stub(), get: fakeGet()}
+					'client-id-2': {id: 'client-id-2', emit: @emit2 = sinon.stub(), get: fakeGet()}
+					'client-id-4': {id: 'client-id-4', emit: @emit4 = sinon.stub(), get: fakeGet(true)}
 				}
 				@io.to = sinon.stub().returns(
 					clients: sinon.stub().yields(null, ['client-id-1', 'client-id-2', 'client-id-4'])
@@ -132,9 +136,9 @@ describe "WebsocketLoadBalancer", ->
 		describe "with a designated room, and restricted clients, restricted message", ->
 			beforeEach ->
 				@io.sockets = {connected:
-					'client-id-1': {id: 'client-id-1', emit: @emit1 = sinon.stub()}
-					'client-id-2': {id: 'client-id-2', emit: @emit2 = sinon.stub()}
-					'client-id-4': {id: 'client-id-4', emit: @emit4 = sinon.stub(), __isRestricted: true}
+					'client-id-1': {id: 'client-id-1', emit: @emit1 = sinon.stub(), get: fakeGet()}
+					'client-id-2': {id: 'client-id-2', emit: @emit2 = sinon.stub(), get: fakeGet()}
+					'client-id-4': {id: 'client-id-4', emit: @emit4 = sinon.stub(), get: fakeGet(true)}
 				}
 				@io.to = sinon.stub().returns(
 					clients: sinon.stub().yields(null, ['client-id-1', 'client-id-2', 'client-id-4'])

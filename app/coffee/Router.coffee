@@ -4,7 +4,6 @@ settings = require "settings-sharelatex"
 WebsocketController = require "./WebsocketController"
 HttpController = require "./HttpController"
 HttpApiController = require "./HttpApiController"
-Utils = require "./Utils"
 bodyParser = require "body-parser"
 
 ClientStoreManager = require "./ClientStoreManager"
@@ -18,7 +17,7 @@ httpAuth = basicAuth (user, pass)->
 
 module.exports = Router =
 	_handleError: (callback = ((error) ->), error, client, method, extraAttrs = {}) ->
-		Utils.getClientAttributes client, ["project_id", "doc_id", "user_id"], (_, attrs) ->
+		client.getMulti ["project_id", "doc_id", "user_id"], (_, attrs) ->
 			for key, value of extraAttrs
 				attrs[key] = value
 			attrs.client_id = client.id

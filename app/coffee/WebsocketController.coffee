@@ -6,7 +6,6 @@ DocumentUpdaterManager = require "./DocumentUpdaterManager"
 ConnectedUsersManager = require "./ConnectedUsersManager"
 WebsocketLoadBalancer = require "./WebsocketLoadBalancer"
 RoomManager = require "./RoomManager"
-Utils = require "./Utils"
 
 module.exports = WebsocketController =
 	# If the protocol version changes when the client reconnects,
@@ -54,7 +53,7 @@ module.exports = WebsocketController =
 	FLUSH_IF_EMPTY_DELAY: 500 #ms
 	leaveProject: (io, client, callback = (error) ->) ->
 		metrics.inc "editor.leave-project"
-		Utils.getClientAttributes client, ["project_id", "user_id"], (error, {project_id, user_id}) ->
+		client.getMulti ["project_id", "user_id"], (error, {project_id, user_id}) ->
 			return callback(error) if error?
 
 			logger.log {project_id, user_id, client_id: client.id}, "client leaving project"
@@ -88,7 +87,7 @@ module.exports = WebsocketController =
 
 	joinDoc: (client, doc_id, fromVersion = -1, options, callback = (error, doclines, version, ops, ranges) ->) ->
 		metrics.inc "editor.join-doc"
-		Utils.getClientAttributes client, ["project_id", "user_id", "is_restricted_user"], (error, {project_id, user_id, is_restricted_user}) ->
+		client.getMulti ["project_id", "user_id", "is_restricted_user"], (error, {project_id, user_id, is_restricted_user}) ->
 			return callback(error) if error?
 			return callback(new Error("no project_id found on client")) if !project_id?
 			logger.log {user_id, project_id, doc_id, fromVersion, client_id: client.id}, "client joining doc"
@@ -133,7 +132,7 @@ module.exports = WebsocketController =
 
 	leaveDoc: (client, doc_id, callback = (error) ->) ->
 		metrics.inc "editor.leave-doc"
-		Utils.getClientAttributes client, ["project_id", "user_id"], (error, {project_id, user_id}) ->
+		client.getMulti ["project_id", "user_id"], (error, {project_id, user_id}) ->
 			logger.log {user_id, project_id, doc_id, client_id: client.id}, "client leaving doc"
 			RoomManager.leaveDoc(client, doc_id)
 			# we could remove permission when user leaves a doc, but because
@@ -143,7 +142,7 @@ module.exports = WebsocketController =
 			callback()
 	updateClientPosition: (client, cursorData, callback = (error) ->) ->
 		metrics.inc "editor.update-client-position", 0.1
-		Utils.getClientAttributes client, [
+		client.getMulti [
 			"project_id", "first_name", "last_name", "email", "user_id"
 		], (error, {project_id, first_name, last_name, email, user_id}) ->
 			return callback(error) if error?
@@ -184,7 +183,7 @@ module.exports = WebsocketController =
 	CLIENT_REFRESH_DELAY: 1000
 	getConnectedUsers: (client, callback = (error, users) ->) ->
 		metrics.inc "editor.get-connected-users"
-		Utils.getClientAttributes client, ["project_id", "user_id", "is_restricted_user"], (error, clientAttributes) ->
+		client.getMulti ["project_id", "user_id", "is_restricted_user"], (error, clientAttributes) ->
 			return callback(error) if error?
 			{project_id, user_id, is_restricted_user} = clientAttributes
 			if is_restricted_user
@@ -202,7 +201,7 @@ module.exports = WebsocketController =
 				, WebsocketController.CLIENT_REFRESH_DELAY
 
 	applyOtUpdate: (client, doc_id, update, callback = (error) ->) ->
-		Utils.getClientAttributes client, ["user_id", "project_id"], (error, {user_id, project_id}) ->
+		client.getMulti ["user_id", "project_id"], (error, {user_id, project_id}) ->
 			return callback(error) if error?
 			return callback(new Error("no project_id found on client")) if !project_id?
 			WebsocketController._assertClientCanApplyUpdate client, doc_id, update, (error) ->
