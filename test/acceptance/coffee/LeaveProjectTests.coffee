@@ -26,6 +26,7 @@ describe "leaveProject", ->
 				(cb) =>
 					@clientA = RealTimeClient.connect()
 					@clientA.on "connectionAccepted", () =>
+						# .id may be cleaned up after disconnect
 						@clientA_id = @clientA.id
 						cb()
 					
@@ -70,7 +71,7 @@ describe "leaveProject", ->
 		it "should no longer list the client in connected users", (done) ->
 			@clientB.emit "clientTracking.getConnectedUsers", (error, users) =>
 				for user in users
-					if user.client_id == @clientA.id
+					if user.client_id == @clientA_id
 						throw "Expected clientA to not be listed in connected users"
 				return done()
 		
