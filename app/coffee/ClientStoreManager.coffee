@@ -17,7 +17,6 @@ ClientStore.wrap = (client) ->
 	client.del = ClientStore.del.bind(client)
 	client.getMulti = ClientStore.getMulti.bind(client)
 	client.setMulti = ClientStore.setMulti.bind(client)
-	client.delMulti = ClientStore.delMulti.bind(client)
 
 ClientStore.unwrap = (client) ->
 		logger.info("unwrap #{client.id}")

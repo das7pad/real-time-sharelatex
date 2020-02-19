@@ -26,8 +26,3 @@ module.exports = ClientStoreMemory =
 	del: (client, key, callback = (error) ->) ->
 		delete this.data[key]
 		callback(null)
-
-	delMulti: (client, keys, callback = (error) ->) ->
-		for key in keys
-			delete this.data[key]
-		callback(null)
