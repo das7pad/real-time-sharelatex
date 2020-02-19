@@ -61,7 +61,7 @@ module.exports = DocumentUpdaterController =
 	_applyUpdateFromDocumentUpdater: (io, doc_id, update) ->
 		source = update.meta?.source
 		if io.sockets.connected.hasOwnProperty(source)
-			emitter = io.sockets.connected[update.meta.source]
+			emitter = io.sockets.connected[source]
 			logger.log {doc_id, version: update.v, source}, "distributing update to sender"
 			emitter.emit "otUpdateApplied", v: update.v, doc: update.doc
 		else
