@@ -76,7 +76,7 @@ module.exports = DocumentUpdaterController =
 				return logger.err {room: doc_id, err}, "failed to get room clients"
 
 			for clientId in clientIds
-				return unless io.sockets.connected.hasOwnProperty(clientId)
+				continue unless io.sockets.connected.hasOwnProperty(clientId)
 				client = io.sockets.connected[clientId]
 				logger.warn err: error, doc_id: doc_id, client_id: client.id, "error from document updater, disconnecting client"
 				client.emit "otUpdateError", error, message
