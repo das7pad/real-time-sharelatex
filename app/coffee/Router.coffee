@@ -94,11 +94,11 @@ module.exports = Router =
 				metrics.gauge('socket-io.clients', Object.keys(io.sockets.connected).length - 1)
 				ClientStoreManager.unwrap(client)
 
-			client.on "disconnecting", () ->
+			client.on "disconnecting", (callback) ->
 				# This is called just before leaving rooms.
 				WebsocketController.leaveProject io, client, (err) ->
 					if err?
-						Router._handleError (() ->), err, client, "leaveProject"
+						Router._handleError callback, err, client, "leaveProject"
 
 			# Variadic. The possible arguments:
 			# doc_id, callback
