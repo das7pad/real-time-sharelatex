@@ -8,9 +8,7 @@ module.exports = HttpController =
 	# should provide appropriate coverage.
 	_getConnectedClientView: (ioClient, callback = (error, client) ->) ->
 			client_id = ioClient.id
-			{project_id, user_id, first_name, last_name, email, connected_time} = ioClient.getMulti [
-				"project_id", "user_id", "first_name", "last_name", "email", "connected_time"
-			]
+			{project_id, user_id, first_name, last_name, email, connected_time} = ioClient.ol_context
 			client = {client_id, project_id, user_id, first_name, last_name, email, connected_time}
 			client.rooms = []
 			for name in Object.values(ioClient.rooms)

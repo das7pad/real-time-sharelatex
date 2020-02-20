@@ -6,7 +6,7 @@ module.exports = AuthorizationManager =
 		AuthorizationManager._assertClientHasPrivilegeLevel client, ["readAndWrite", "owner"], callback
 				
 	_assertClientHasPrivilegeLevel: (client, allowedLevels, callback = (error) ->) ->
-		if client.get("privilege_level") in allowedLevels
+		if client.ol_context["privilege_level"] in allowedLevels
 			callback null
 		else
 			callback new Error("not authorized")
@@ -22,15 +22,15 @@ module.exports = AuthorizationManager =
 			AuthorizationManager._assertClientCanAccessDoc client, doc_id, callback
 
 	_assertClientCanAccessDoc: (client, doc_id, callback = (error) ->) ->
-		if client.get("doc:#{doc_id}") is "allowed"
+		if client.ol_context["doc:#{doc_id}"] is "allowed"
 			callback null
 		else
 			callback new Error("not authorized")
 
 	addAccessToDoc: (client, doc_id, callback = (error) ->) ->
-		client.set("doc:#{doc_id}", "allowed")
+		client.ol_context["doc:#{doc_id}"] = "allowed"
 		callback(null)
 
 	removeAccessToDoc: (client, doc_id, callback = (error) ->) ->
-		client.del("doc:#{doc_id}")
+		delete client.ol_context["doc:#{doc_id}"]
 		callback(null)

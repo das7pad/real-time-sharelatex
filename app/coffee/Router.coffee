@@ -16,10 +16,9 @@ httpAuth = basicAuth (user, pass)->
 	return isValid
 
 module.exports = Router =
-	_handleError: (callback = ((error) ->), error, client, method, extraAttrs = {}) ->
-			attrs = client.getMulti ["project_id", "doc_id", "user_id"]
-			for key, value of extraAttrs
-				attrs[key] = value
+	_handleError: (callback = ((error) ->), error, client, method, attrs = {}) ->
+			for key in ["project_id", "doc_id", "user_id"]
+				attrs[key] = client.ol_context[key]
 			attrs.client_id = client.id
 			attrs.err = error
 			if error.name == "CodedError"
