@@ -19,22 +19,18 @@ describe 'WebsocketController', ->
 			loginCount: 42
 		}
 		@callback = sinon.stub()
-		@clientStore = {}
 		@client =
 			id: @client_id = "mock-client-id-123"
 			params: {}
 			set: sinon.stub()
-			get: (param, cb) -> cb null, @params[param]
-			getMulti: (keys, cb) ->
+			get: (param) -> @params[param]
+			getMulti: (keys) ->
 				ret = {}
 				for key in keys
 					ret[key] = @params[key]
-				cb(null, ret)
+				return ret
 			join: sinon.stub()
 			leave: sinon.stub()
-			setMulti: (values, cb) =>
-				@clientStore = values
-				cb()
 		@WebsocketController = SandboxedModule.require modulePath, requires:
 			"./WebApiManager": @WebApiManager = {}
 			"./AuthorizationManager": @AuthorizationManager = {}
@@ -76,27 +72,38 @@ describe 'WebsocketController', ->
 				@RoomManager.joinProject.calledWith(@client, @project_id).should.equal true
 
 			it "should set the privilege level on the client", ->
-				@clientStore["privilege_level"].should.equal @privilegeLevel
+				@client.set.calledWith("privilege_level", @privilegeLevel).should.equal true
+
 			it "should set the user's id on the client", ->
-				@clientStore["user_id"].should.equal @user._id
+				@client.set.calledWith("user_id", @user._id).should.equal true
+
 			it "should set the user's email on the client", ->
-				@clientStore["email"].should.equal @user.email
+				@client.set.calledWith("email", @user.email).should.equal true
+
 			it "should set the user's first_name on the client", ->
-				@clientStore["first_name"].should.equal @user.first_name
+				@client.set.calledWith("first_name", @user.first_name).should.equal true
+
 			it "should set the user's last_name on the client", ->
-				@clientStore["last_name"].should.equal @user.last_name
+				@client.set.calledWith("last_name", @user.last_name).should.equal true
+
 			it "should set the user's sign up date on the client", ->
-				@clientStore["signup_date"].should.equal @user.signUpDate
+				@client.set.calledWith("signup_date", @user.signUpDate).should.equal true
+
 			it "should set the user's login_count on the client", ->
-				@clientStore["login_count"].should.equal @user.loginCount
+				@client.set.calledWith("login_count", @user.loginCount).should.equal true
+
 			it "should set the connected time on the client", ->
-				@clientStore["connected_time"].should.equal new Date()
+				@client.set.calledWith("connected_time", new Date()).should.equal true
+
 			it "should set the project_id on the client", ->
-				@clientStore["project_id"].should.equal @project_id
+				@client.set.calledWith("project_id", @project_id).should.equal true
+
 			it "should set the project owner id on the client", ->
-				@clientStore["owner_id"].should.equal @owner_id
+				@client.set.calledWith("owner_id", @owner_id).should.equal true
+
 			it "should set the is_restricted_user flag on the client", ->
-				@clientStore["is_restricted_user"].should.equal @isRestrictedUser
+				@client.set.calledWith("is_restricted_user", @isRestrictedUser).should.equal true
+
 			it "should call the callback with the project, privilegeLevel and protocolVersion", ->
 				@callback
 					.calledWith(null, @project, @privilegeLevel, @WebsocketController.PROTOCOL_VERSION)

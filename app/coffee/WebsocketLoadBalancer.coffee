@@ -101,8 +101,7 @@ module.exports = WebsocketLoadBalancer =
 					Async.eachLimit clientList
 					, 2
 					, (client, cb) ->
-						client.get 'is_restricted_user', (err, is_restricted_user) ->
-							return cb(err) if err?
+							is_restricted_user = client.get('is_restricted_user')
 							if !(is_restricted_user && message.message not in RESTRICTED_USER_MESSAGE_TYPE_PASS_LIST)
 								client.emit(message.message, message.payload...)
 							cb()

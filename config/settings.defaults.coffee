@@ -60,8 +60,6 @@ settings =
 
 	publishOnIndividualChannels: process.env['PUBLISH_ON_INDIVIDUAL_CHANNELS'] or false
 
-	clientStoreBackend: process.env['CLIENT_STORE_BACKEND'] or 'memory'
-
 	sentry:
 		dsn: process.env.SENTRY_DSN
 	

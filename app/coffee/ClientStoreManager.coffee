@@ -1,25 +1,17 @@
-logger = require "logger-sharelatex"
-Settings = require("settings-sharelatex")
-
-if Settings.clientStoreBackend == "memory"
-	ClientStore = require("./ClientStoreMemory")
-else
-	logger.info {
-		backend: Settings.clientStoreBackend
-	}, "unknown client store backend, using memory as fallback"
-	ClientStore = require("./ClientStoreMemory")
+ClientStore = {}
 
 ClientStore.wrap = (client) ->
-	logger.info("wrap #{client.id}")
-	ClientStore.init(client)
-	client.get = ClientStore.get.bind(client)
-	client.set = ClientStore.set.bind(client)
-	client.del = ClientStore.del.bind(client)
-	client.getMulti = ClientStore.getMulti.bind(client)
-	client.setMulti = ClientStore.setMulti.bind(client)
+	client.data = data = new Map()
+	client.get = data.get.bind(data)
+	client.set = data.set.bind(data)
+	client.del = data.delete.bind(data)
+	client.getMulti = (keys) ->
+		out = {}
+		for key in keys
+			out[key] = data.get(key)
+		return out
 
 ClientStore.unwrap = (client) ->
-		logger.info("unwrap #{client.id}")
-		ClientStore.clear client
+	client.data.clear()
 
 module.exports = ClientStore

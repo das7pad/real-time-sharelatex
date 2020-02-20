@@ -4,10 +4,10 @@ require('chai').should()
 modulePath = require('path').join __dirname, '../../../app/js/WebsocketLoadBalancer'
 
 fakeGet = (restricted) ->
-	(field, cb) ->
+	(field) ->
 		if field != 'is_restricted_user'
-			return cb(new Error('not set'))
-		cb(null, restricted)
+			throw new Error('not set')
+		return restricted
 
 describe "WebsocketLoadBalancer", ->
 	beforeEach ->

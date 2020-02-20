@@ -17,7 +17,7 @@ httpAuth = basicAuth (user, pass)->
 
 module.exports = Router =
 	_handleError: (callback = ((error) ->), error, client, method, extraAttrs = {}) ->
-		client.getMulti ["project_id", "doc_id", "user_id"], (_, attrs) ->
+			attrs = client.getMulti ["project_id", "doc_id", "user_id"]
 			for key, value of extraAttrs
 				attrs[key] = value
 			attrs.client_id = client.id

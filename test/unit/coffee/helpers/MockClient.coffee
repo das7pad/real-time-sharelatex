@@ -10,13 +10,8 @@ module.exports = class MockClient
 		@to = sinon.stub().returns({emit: @emit_to = sinon.stub()})
 		@disconnect = sinon.stub()
 		@id = idCounter++
-	set : (key, value, callback) ->
+	set : (key, value) ->
 		@attributes[key] = value
-		callback() if callback?
-	setMulti: (values, callback=()->) ->
-		for key, value of values
-			@attributes[key] = value
-			callback()
-	get : (key, callback) ->
-		callback null, @attributes[key]
+	get : (key) ->
+		return @attributes[key]
 	disconnect: () ->

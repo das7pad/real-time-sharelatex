@@ -7,11 +7,10 @@ module.exports = HttpController =
 	# and for checking internal state in acceptance tests. The acceptances tests
 	# should provide appropriate coverage.
 	_getConnectedClientView: (ioClient, callback = (error, client) ->) ->
-		client_id = ioClient.id
-		ioClient.getMulti [
-			"project_id", "user_id", "first_name", "last_name", "email", "connected_time"
-		], (error, {project_id, user_id, first_name, last_name, email, connected_time}) ->
-			return callback(error) if error?
+			client_id = ioClient.id
+			{project_id, user_id, first_name, last_name, email, connected_time} = ioClient.getMulti [
+				"project_id", "user_id", "first_name", "last_name", "email", "connected_time"
+			]
 			client = {client_id, project_id, user_id, first_name, last_name, email, connected_time}
 			client.rooms = []
 			for name in Object.values(ioClient.rooms)

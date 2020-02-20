@@ -25,36 +25,32 @@ module.exports = WebsocketController =
 				logger.warn {err, project_id, user_id, client_id: client.id}, "user is not authorized to join project"
 				return callback(err)
 
-			client.setMulti {
-				"privilege_level": privilegeLevel,
-				"user_id": user_id,
-				"project_id": project_id,
-				"owner_id": project?.owner?._id,
-				"first_name": user?.first_name,
-				"last_name": user?.last_name,
-				"email": user?.email,
-				"connected_time": new Date(),
-				"signup_date": user?.signUpDate,
-				"login_count": user?.loginCount,
-				"is_restricted_user": !!(isRestrictedUser),
-			}, (error) ->
-				if error
-					return callback(error)
+			client.set("privilege_level", privilegeLevel)
+			client.set("user_id", user_id)
+			client.set("project_id", project_id)
+			client.set("owner_id", project?.owner?._id)
+			client.set("first_name", user?.first_name)
+			client.set("last_name", user?.last_name)
+			client.set("email", user?.email)
+			client.set("connected_time", new Date())
+			client.set("signup_date", user?.signUpDate)
+			client.set("login_count", user?.loginCount)
+			client.set("is_restricted_user", !!(isRestrictedUser))
 
-				RoomManager.joinProject client, project_id, (err) ->
-					logger.log {user_id, project_id, client_id: client.id}, "user joined project"
-					callback null, project, privilegeLevel, WebsocketController.PROTOCOL_VERSION
+			RoomManager.joinProject client, project_id, (err) ->
+				logger.log {user_id, project_id, client_id: client.id}, "user joined project"
+				callback null, project, privilegeLevel, WebsocketController.PROTOCOL_VERSION
 
-				# No need to block for setting the user as connected in the cursor tracking
-				ConnectedUsersManager.updateUserPosition project_id, client.id, user, null, () ->
+			# No need to block for setting the user as connected in the cursor tracking
+			ConnectedUsersManager.updateUserPosition project_id, client.id, user, null, () ->
+
 	# We want to flush a project if there are no more (local) connected clients
 	# but we need to wait for the triggering client to disconnect. How long we wait
 	# is determined by FLUSH_IF_EMPTY_DELAY.
 	FLUSH_IF_EMPTY_DELAY: 500 #ms
 	leaveProject: (io, client, callback = (error) ->) ->
-		metrics.inc "editor.leave-project"
-		client.getMulti ["project_id", "user_id"], (error, {project_id, user_id}) ->
-			return callback(error) if error?
+			metrics.inc "editor.leave-project"
+			{project_id, user_id} = client.getMulti ["project_id", "user_id"]
 
 			logger.log {project_id, user_id, client_id: client.id}, "client leaving project"
 			WebsocketLoadBalancer.emitToRoom project_id, "clientTracking.clientDisconnected", client.id
@@ -86,9 +82,8 @@ module.exports = WebsocketController =
 			, WebsocketController.FLUSH_IF_EMPTY_DELAY
 
 	joinDoc: (client, doc_id, fromVersion = -1, options, callback = (error, doclines, version, ops, ranges) ->) ->
-		metrics.inc "editor.join-doc"
-		client.getMulti ["project_id", "user_id", "is_restricted_user"], (error, {project_id, user_id, is_restricted_user}) ->
-			return callback(error) if error?
+			metrics.inc "editor.join-doc"
+			{project_id, user_id, is_restricted_user} = client.getMulti ["project_id", "user_id", "is_restricted_user"]
 			return callback(new Error("no project_id found on client")) if !project_id?
 			logger.log {user_id, project_id, doc_id, fromVersion, client_id: client.id}, "client joining doc"
 
@@ -131,8 +126,8 @@ module.exports = WebsocketController =
 						callback null, escapedLines, version, ops, ranges
 
 	leaveDoc: (client, doc_id, callback = (error) ->) ->
-		metrics.inc "editor.leave-doc"
-		client.getMulti ["project_id", "user_id"], (error, {project_id, user_id}) ->
+			metrics.inc "editor.leave-doc"
+			{project_id, user_id} = client.getMulti ["project_id", "user_id"]
 			logger.log {user_id, project_id, doc_id, client_id: client.id}, "client leaving doc"
 			RoomManager.leaveDoc(client, doc_id)
 			# we could remove permission when user leaves a doc, but because
@@ -141,11 +136,10 @@ module.exports = WebsocketController =
 			## AuthorizationManager.removeAccessToDoc client, doc_id
 			callback()
 	updateClientPosition: (client, cursorData, callback = (error) ->) ->
-		metrics.inc "editor.update-client-position", 0.1
-		client.getMulti [
-			"project_id", "first_name", "last_name", "email", "user_id"
-		], (error, {project_id, first_name, last_name, email, user_id}) ->
-			return callback(error) if error?
+			metrics.inc "editor.update-client-position", 0.1
+			{project_id, first_name, last_name, email, user_id} = client.getMulti [
+				"project_id", "first_name", "last_name", "email", "user_id"
+			]
 			logger.log {user_id, project_id, client_id: client.id, cursorData: cursorData}, "updating client position"
 
 			AuthorizationManager.assertClientCanViewProjectAndDoc client, cursorData.doc_id, (error) ->
@@ -182,10 +176,8 @@ module.exports = WebsocketController =
 
 	CLIENT_REFRESH_DELAY: 1000
 	getConnectedUsers: (client, callback = (error, users) ->) ->
-		metrics.inc "editor.get-connected-users"
-		client.getMulti ["project_id", "user_id", "is_restricted_user"], (error, clientAttributes) ->
-			return callback(error) if error?
-			{project_id, user_id, is_restricted_user} = clientAttributes
+			metrics.inc "editor.get-connected-users"
+			{project_id, user_id, is_restricted_user} = client.getMulti ["project_id", "user_id", "is_restricted_user"]
 			if is_restricted_user
 				return callback(null, [])
 			return callback(new Error("no project_id found on client")) if !project_id?
@@ -201,8 +193,7 @@ module.exports = WebsocketController =
 				, WebsocketController.CLIENT_REFRESH_DELAY
 
 	applyOtUpdate: (client, doc_id, update, callback = (error) ->) ->
-		client.getMulti ["user_id", "project_id"], (error, {user_id, project_id}) ->
-			return callback(error) if error?
+			{user_id, project_id} = client.getMulti ["user_id", "project_id"]
 			return callback(new Error("no project_id found on client")) if !project_id?
 			WebsocketController._assertClientCanApplyUpdate client, doc_id, update, (error) ->
 				if error?

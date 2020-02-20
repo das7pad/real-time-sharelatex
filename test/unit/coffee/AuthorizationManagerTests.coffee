@@ -10,14 +10,12 @@ describe 'AuthorizationManager', ->
 	beforeEach ->
 		@client =
 			params: {}
-			get: (param, cb) ->
-				cb null, @params[param]
-			set: (param, value, cb) ->
+			get: (param) ->
+				return @params[param]
+			set: (param, value) ->
 				@params[param] = value
-				cb()
-			del: (param, cb) ->
+			del: (param) ->
 				delete @params[param]
-				cb()
 
 		@AuthorizationManager = SandboxedModule.require modulePath, requires: {}
 
