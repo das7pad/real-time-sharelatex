@@ -19,3 +19,18 @@ module.exports = HttpApiController =
 		logger.log {rate}, "setting client drain rate"
 		DrainManager.startDrain io, rate
 		res.sendStatus 204
+
+	disconnectClient: (req, res, next) ->
+		io = req.app.get("io")
+		client_id = req.params.client_id
+		client = io.sockets.connected[client_id]
+
+		if !client
+			logger.info({client_id}, "api: client already disconnected")
+			res.sendStatus(404)
+			return
+		console.error('CLIENT DISCONNECT', client_id)
+		logger.warn({client_id}, "api: requesting client disconnect")
+		client.on "disconnect", () ->
+			res.sendStatus(204)
+		client.disconnect()
