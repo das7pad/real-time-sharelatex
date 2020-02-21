@@ -84,9 +84,14 @@ module.exports = WebsocketLoadBalancer =
 					if err?
 						return logger.err {room: message.room_id, err}, "failed to get room clients"
 
+					is_restricted_message = message.message not in RESTRICTED_USER_MESSAGE_TYPE_PASS_LIST
+
 					clientList = clientIds.filter(
 						(id) -> io.sockets.connected.hasOwnProperty(id)
 					).map((id) -> io.sockets.connected[id])
+					.filter((client) ->
+						!(is_restricted_message && client.ol_context['is_restricted_user'])
+					)
 
 					# avoid unnecessary work if no clients are connected
 					return if clientList.length is 0
@@ -101,10 +106,8 @@ module.exports = WebsocketLoadBalancer =
 					Async.eachLimit clientList
 					, 2
 					, (client, cb) ->
-							is_restricted_user = client.ol_context['is_restricted_user']
-							if !(is_restricted_user && message.message not in RESTRICTED_USER_MESSAGE_TYPE_PASS_LIST)
 								client.emit(message.message, message.payload...)
-							cb()
+								cb()
 					, (err) ->
 						if err?
 							logger.err {err, message}, "Error sending message to clients"
