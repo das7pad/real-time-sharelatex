@@ -1,4 +1,5 @@
 io = require("socket.io-client")
+async = require("async")
 
 request = require "request"
 Settings = require "settings-sharelatex"
@@ -52,3 +53,19 @@ module.exports = Client =
 			callback error, data
 		return null
 
+	disconnectClient: (client_id, callback) ->
+		request.post {
+			url: "http://localhost:3026/client/#{client_id}/disconnect"
+			auth: {
+				user: Settings.internal.realTime.user,
+				pass: Settings.internal.realTime.pass
+			}
+		}, (error, response, data) ->
+			callback error, data
+		return null
+
+	disconnectAllClients: (callback) ->
+		Client.getConnectedClients (error, clients) ->
+			async.each clients, (clientView, cb) ->
+				Client.disconnectClient clientView.client_id, cb
+			, callback
