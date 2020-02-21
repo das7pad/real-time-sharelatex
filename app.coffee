@@ -98,34 +98,46 @@ server.listen port, host, (error) ->
 shutdownCleanly = (signal) ->
 	io.sockets.clients (error, connectedClients) ->
 		if connectedClients.length == 0
-			logger.log("no clients connected, exiting")
+			logger.warn("no clients connected, exiting")
 			process.exit()
 		else
-			logger.log {connectedClients}, "clients still connected, not shutting down yet"
+			logger.warn {connectedClients}, "clients still connected, not shutting down yet"
 			setTimeout () ->
 				shutdownCleanly(signal)
-			, 10000
+			, 30 * 1000
+
+drainAndShutdown = (signal) ->
+	if Settings.shutDownInProgress
+		logger.warn signal: signal, "shutdown already in progress, ignoring signal"
+		return
+	else
+		Settings.shutDownInProgress = true
+		statusCheckInterval = Settings.statusCheckInterval
+		logger.warn signal: signal, "received interrupt, delay drain by #{statusCheckInterval}ms"
+		setTimeout () ->
+			logger.warn "starting drain over #{shutdownDrainTimeWindow} mins"
+			DrainManager.startDrainTimeWindow(io, shutdownDrainTimeWindow)
+			shutdownCleanly(signal)
+		, statusCheckInterval
+
 
 Settings.shutDownInProgress = false
 if Settings.shutdownDrainTimeWindow?
 	shutdownDrainTimeWindow = parseInt(Settings.shutdownDrainTimeWindow, 10)
 	logger.log shutdownDrainTimeWindow: shutdownDrainTimeWindow,"shutdownDrainTimeWindow enabled"
 	for signal in ['SIGINT', 'SIGHUP', 'SIGQUIT', 'SIGUSR1', 'SIGUSR2', 'SIGTERM', 'SIGABRT']
-		process.on signal, ->
-			if Settings.shutDownInProgress
-				logger.log signal: signal, "shutdown already in progress, ignoring signal"
-				return
-			else
-				Settings.shutDownInProgress = true
-				statusCheckInterval = Settings.statusCheckInterval
-				logger.warn signal: signal, "received interrupt, delay drain by #{statusCheckInterval}ms"
-				setTimeout () ->
-					logger.warn "starting drain over #{shutdownDrainTimeWindow} mins"
-					DrainManager.startDrainTimeWindow(io, shutdownDrainTimeWindow)
-					shutdownCleanly(signal)
-				, statusCheckInterval
+		process.on signal, drainAndShutdown  # signal is passed as argument to event handler
 
-
+	# global exception handler
+	if Settings.errors?.catchUncaughtErrors
+		process.removeAllListeners('uncaughtException')
+		process.on 'uncaughtException', (error) ->
+			if ['EPIPE', 'ECONNRESET'].includes(error.code)
+				Metrics.inc('disconnected_write', 1, {status: error.code})
+				return logger.warn err: error, 'attempted to write to disconnected client'
+			logger.error err: error, 'uncaught exception'
+			if Settings.errors?.shutdownOnUncaughtError
+				drainAndShutdown('SIGABRT')
 
 if Settings.continualPubsubTraffic
 	console.log "continualPubsubTraffic enabled"

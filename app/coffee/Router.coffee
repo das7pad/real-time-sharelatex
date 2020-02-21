@@ -44,6 +44,12 @@ module.exports = Router =
 		session.on 'connection', (error, client, session) ->
 			ClientStoreManager.wrap(client)
 
+			client?.on "error", (err) ->
+				logger.err { clientErr: err }, "socket.io client error"
+				if client.connected
+					client.emit("reconnectGracefully")
+					client.disconnect()
+
 			if settings.shutDownInProgress
 				client.emit("connectionRejected", {message: "retry"})
 				client.disconnect()
