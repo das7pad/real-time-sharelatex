@@ -49,6 +49,8 @@ describe "DrainManagerTests", ->
 			], done
 
 		describe "starting to drain", () ->
+			# there is an internal delay of 1000ms, shift accordingly
+			@timeout(5000)
 			beforeEach (done) ->
 				async.parallel [
 					(cb) =>
