@@ -52,12 +52,10 @@ describe "DrainManagerTests", ->
 					@clientB.on "connectionAccepted", cb
 
 				(cb) =>
-					@clientA.emit "joinProject", project_id: @project_id, (error, @project, @privilegeLevel, @protocolVersion) =>
-						cb(error)
+					@clientA.emit "joinProject", project_id: @project_id, cb
 
 				(cb) =>
-					@clientB.emit "joinProject", project_id: @project_id, (error, @project, @privilegeLevel, @protocolVersion) =>
-						cb(error)
+					@clientB.emit "joinProject", project_id: @project_id, cb
 			], done
 
 		describe "starting to drain", () ->

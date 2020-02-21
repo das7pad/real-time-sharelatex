@@ -26,7 +26,7 @@ describe "leaveProject", ->
 				(cb) =>
 					@clientA = RealTimeClient.connect()
 					@clientA.on "connectionAccepted", () =>
-						# .id may be cleaned up after disconnect
+						# may be cleaned up after disconnect
 						@clientA_id = @clientA.id
 						cb()
 					
