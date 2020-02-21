@@ -22,7 +22,7 @@ describe "receiveUpdate", ->
 			(cb) =>
 				FixturesManager.setUpProject {
 					privilegeLevel: "owner"
-					project: {name: "Test Project"}
+					project: { name: "Test Project"	}
 				}, (error, {@user_id, @project_id}) => cb()
 
 			(cb) =>
@@ -34,20 +34,22 @@ describe "receiveUpdate", ->
 				@clientA.on "connectionAccepted", cb
 
 			(cb) =>
+				@clientB = RealTimeClient.connect()
+				@clientB.on "connectionAccepted", cb
+
+			(cb) =>
 				@clientA.emit "joinProject", {
 					project_id: @project_id
 				}, cb
-			(cb) =>
-				@clientA.emit "joinDoc", @doc_id, cb
 
 			(cb) =>
-				@clientB = RealTimeClient.connect()
-				@clientB.on "connectionAccepted", cb
+				@clientA.emit "joinDoc", @doc_id, cb
 
 			(cb) =>
 				@clientB.emit "joinProject", {
 					project_id: @project_id
 				}, cb
+
 			(cb) =>
 				@clientB.emit "joinDoc", @doc_id, cb
 
