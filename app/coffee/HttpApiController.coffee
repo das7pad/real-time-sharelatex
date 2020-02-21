@@ -29,7 +29,6 @@ module.exports = HttpApiController =
 			logger.info({client_id}, "api: client already disconnected")
 			res.sendStatus(404)
 			return
-		console.error('CLIENT DISCONNECT', client_id)
 		logger.warn({client_id}, "api: requesting client disconnect")
 		client.on "disconnect", () ->
 			res.sendStatus(204)
