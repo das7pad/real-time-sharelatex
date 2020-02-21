@@ -23,3 +23,4 @@ module.exports =
 
 				for callback in @callbacks
 					callback()
+			return null
