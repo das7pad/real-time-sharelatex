@@ -1,6 +1,6 @@
 const Metrics = require('metrics-sharelatex')
 const Settings = require('settings-sharelatex')
-Metrics.initialize(Settings.appName || 'real-time')
+Metrics.initialize(process.env.METRICS_APP_NAME || 'real-time')
 const async = require('async')
 
 const logger = require('logger-sharelatex')
