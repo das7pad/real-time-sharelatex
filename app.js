@@ -10,9 +10,6 @@ Metrics.event_loop.monitor(logger)
 const express = require('express')
 const session = require('express-session')
 const redis = require('redis-sharelatex')
-if (Settings.sentry && Settings.sentry.dsn) {
-  logger.initializeErrorReporting(Settings.sentry.dsn)
-}
 
 const sessionRedisClient = redis.createClient(Settings.redis.websessions)
 
