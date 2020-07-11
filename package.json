@@ -27,16 +27,16 @@
     "cookie-parser": "^1.4.5",
     "express": "^4.17.1",
     "express-session": "^1.17.1",
-    "logger-sharelatex": "^1.7.0",
-    "metrics-sharelatex": "^2.6.2",
-    "redis-sharelatex": "^1.0.12",
+    "logger-sharelatex": "https://github.com/das7pad/logger-sharelatex/archive/9517d83da189fd80f8a70d4f90619c0a08ff5b12.tar.gz",
+    "metrics-sharelatex": "https://github.com/das7pad/metrics-sharelatex/archive/471b0a35d8125818393738cb95702367add6d203.tar.gz",
+    "redis-sharelatex": "https://github.com/das7pad/redis-sharelatex/archive/70ee5b4fb50d36f793b44715072872bbb29717bd.tar.gz",
     "request": "^2.88.2",
-    "settings-sharelatex": "^1.1.0",
+    "settings-sharelatex": "https://github.com/das7pad/settings-sharelatex/archive/d0797834438df2d102798a64602adf2f71ac8e48.tar.gz",
     "socket.io": "https://github.com/overleaf/socket.io/archive/0.9.19-overleaf-2.tar.gz",
-    "socket.io-client": "https://github.com/overleaf/socket.io-client/archive/0.9.17-overleaf-1.tar.gz"
+    "socket.io-client": "https://github.com/overleaf/socket.io-client/archive/0.9.17-overleaf-1.tar.gz",
+    "underscore": "1.7.0"
   },
   "devDependencies": {
-    "bunyan": "~0.22.3",
     "chai": "~1.9.1",
     "cookie-signature": "^1.1.0",
     "eslint": "^6.8.0",
