@@ -121,9 +121,6 @@ server.listen(port, host, function (error) {
   logger.info(`realtime starting up, listening on ${host}:${port}`)
 })
 
-// Stop huge stack traces in logs from all the socket.io parsing steps.
-Error.stackTraceLimit = 10
-
 function shutdownCleanly(signal) {
   const connectedClients = io.sockets.clients().length
   if (connectedClients === 0) {
