@@ -847,6 +847,7 @@ describe('WebsocketController', function () {
       this.client.ol_context.project_id = this.project_id
       this.users = ['mock', 'users']
       this.WebsocketLoadBalancer.emitToRoom = sinon.stub()
+      this.WebsocketController.CLIENT_REFRESH_DELAY = 1
       return (this.ConnectedUsersManager.getConnectedUsers = sinon
         .stub()
         .callsArgWith(1, null, this.users))
