@@ -2,7 +2,7 @@
     camelcase,
 */
 const logger = require('logger-sharelatex')
-const metrics = require('metrics-sharelatex')
+const metrics = require('@overleaf/metrics')
 const { EventEmitter } = require('events')
 
 const IdMap = new Map() // keep track of whether ids are from projects or docs

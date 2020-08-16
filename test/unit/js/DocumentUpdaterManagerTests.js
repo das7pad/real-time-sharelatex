@@ -48,7 +48,7 @@ describe('DocumentUpdaterManager', function () {
         }),
         request: (this.request = {}),
         'redis-sharelatex': { createClient: () => this.rclient },
-        'metrics-sharelatex': (this.Metrics = {
+        '@overleaf/metrics': (this.Metrics = {
           summary: sinon.stub(),
           Timer: (Timer = class Timer {
             done() {}

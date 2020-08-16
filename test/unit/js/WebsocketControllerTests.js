@@ -53,7 +53,7 @@ describe('WebsocketController', function () {
           error: sinon.stub(),
           warn: sinon.stub()
         }),
-        'metrics-sharelatex': (this.metrics = {
+        '@overleaf/metrics': (this.metrics = {
           inc: sinon.stub(),
           set: sinon.stub()
         }),

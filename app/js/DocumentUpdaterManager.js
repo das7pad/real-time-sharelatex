@@ -5,7 +5,7 @@ const request = require('request')
 const _ = require('underscore')
 const logger = require('logger-sharelatex')
 const settings = require('settings-sharelatex')
-const metrics = require('metrics-sharelatex')
+const metrics = require('@overleaf/metrics')
 
 const rclient = require('redis-sharelatex').createClient(
   settings.redis.documentupdater
