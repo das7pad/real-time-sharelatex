@@ -14,7 +14,7 @@
     "test:unit:_run": "mocha --recursive --reporter spec $@ test/unit/js",
     "test:unit": "npm run test:unit:_run -- --grep=$MOCHA_GREP",
     "nodemon": "nodemon --config nodemon.json",
-    "lint": "node_modules/.bin/eslint .",
+    "lint": "node_modules/.bin/eslint --max-warnings 0 .",
     "format": "node_modules/.bin/prettier-eslint $PWD'/**/*.js' --list-different",
     "format:fix": "node_modules/.bin/prettier-eslint $PWD'/**/*.js' --write"
   },
@@ -32,8 +32,8 @@
     "redis-sharelatex": "https://github.com/das7pad/redis-sharelatex/archive/2d77ad921db0effe7e522cfb311ae8c8ae22f359.tar.gz",
     "request": "^2.88.2",
     "settings-sharelatex": "https://github.com/das7pad/settings-sharelatex/archive/d0797834438df2d102798a64602adf2f71ac8e48.tar.gz",
-    "socket.io": "https://github.com/overleaf/socket.io/archive/0.9.19-overleaf-2.tar.gz",
-    "socket.io-client": "https://github.com/overleaf/socket.io-client/archive/0.9.17-overleaf-1.tar.gz",
+    "socket.io": "https://github.com/overleaf/socket.io/archive/0.9.19-overleaf-4.tar.gz",
+    "socket.io-client": "https://github.com/overleaf/socket.io-client/archive/0.9.17-overleaf-3.tar.gz",
     "underscore": "1.7.0"
   },
   "devDependencies": {

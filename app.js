@@ -65,7 +65,7 @@ app.get('/', (req, res) => res.send('real-time-sharelatex is alive'))
 
 app.get('/status', function (req, res) {
   if (Settings.shutDownInProgress) {
-    res.send(503) // Service unavailable
+    res.sendStatus(503) // Service unavailable
   } else {
     res.send('real-time-sharelatex is alive')
   }
@@ -95,7 +95,16 @@ function healthCheck(req, res) {
     }
   })
 }
-app.get('/health_check', healthCheck)
+app.get(
+  '/health_check',
+  (req, res, next) => {
+    if (Settings.shutDownComplete) {
+      return res.sendStatus(503)
+    }
+    next()
+  },
+  healthCheck
+)
 
 app.get('/health_check/redis', healthCheck)
 
@@ -149,7 +158,22 @@ function drainAndShutdown(signal) {
         { signal },
         `received interrupt, starting drain over ${shutdownDrainTimeWindow} mins`
       )
-      DrainManager.startDrainTimeWindow(io, shutdownDrainTimeWindow)
+      DrainManager.startDrainTimeWindow(io, shutdownDrainTimeWindow, () => {
+        setTimeout(() => {
+          const staleClients = io.sockets.clients()
+          if (staleClients.length !== 0) {
+            logger.warn(
+              { staleClients: staleClients.map((client) => client.id) },
+              'forcefully disconnecting stale clients'
+            )
+            staleClients.forEach((client) => {
+              client.disconnect()
+            })
+          }
+          // Mark the node as unhealthy.
+          Settings.shutDownComplete = true
+        }, Settings.gracefulReconnectTimeoutMs)
+      })
       shutdownCleanly(signal)
     }, statusCheckInterval)
   }
@@ -175,7 +199,11 @@ if (Settings.shutdownDrainTimeWindow) {
   if (Settings.errors && Settings.errors.catchUncaughtErrors) {
     process.removeAllListeners('uncaughtException')
     process.on('uncaughtException', function (error) {
-      if (['EPIPE', 'ECONNRESET'].includes(error.code)) {
+      if (
+        ['ETIMEDOUT', 'EHOSTUNREACH', 'EPIPE', 'ECONNRESET'].includes(
+          error.code
+        )
+      ) {
         Metrics.inc('disconnected_write', 1, { status: error.code })
         return logger.warn(
           { err: error },
