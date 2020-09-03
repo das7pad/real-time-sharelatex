@@ -1,6 +1,7 @@
 /* eslint-disable
     camelcase,
 */
+const OError = require('@overleaf/o-error')
 const logger = require('logger-sharelatex')
 const metrics = require('@overleaf/metrics')
 const WebApiManager = require('./WebApiManager')
@@ -9,6 +10,11 @@ const DocumentUpdaterManager = require('./DocumentUpdaterManager')
 const ConnectedUsersManager = require('./ConnectedUsersManager')
 const WebsocketLoadBalancer = require('./WebsocketLoadBalancer')
 const RoomManager = require('./RoomManager')
+const {
+  JoinLeaveEpochMismatchError,
+  NotAuthorizedError,
+  NotJoinedError
+} = require('./Errors')
 
 let WebsocketController
 module.exports = WebsocketController = {
@@ -48,12 +54,7 @@ module.exports = WebsocketController = {
       }
 
       if (!privilegeLevel) {
-        const err = new Error('not authorized')
-        logger.warn(
-          { err, project_id, user_id, client_id: client.id },
-          'user is not authorized to join project'
-        )
-        return callback(err)
+        return callback(new NotAuthorizedError())
       }
 
       client.ol_context = {}
@@ -91,7 +92,14 @@ module.exports = WebsocketController = {
         client.publicId,
         user,
         null,
-        function () {}
+        function (err) {
+          if (err) {
+            logger.warn(
+              { err, project_id, user_id, client_id: client.id },
+              'background cursor update failed'
+            )
+          }
+        }
       )
     })
   },
@@ -162,7 +170,7 @@ module.exports = WebsocketController = {
     metrics.inc('editor.join-doc')
     const { project_id, user_id, is_restricted_user } = client.ol_context
     if (!project_id) {
-      return callback(new Error('no project_id found on client'))
+      return callback(new NotJoinedError())
     }
     logger.log(
       { user_id, project_id, doc_id, fromVersion, client_id: client.id },
@@ -184,7 +192,7 @@ module.exports = WebsocketController = {
       }
       if (joinLeaveEpoch !== client.joinLeaveEpoch) {
         // another joinDoc or leaveDoc rpc overtook us
-        return callback(new Error('joinLeaveEpoch mismatch'))
+        return callback(new JoinLeaveEpochMismatchError())
       }
       // ensure the per-doc applied-ops channel is subscribed before sending the
       // doc to the client, so that no events are missed.
@@ -229,17 +237,7 @@ module.exports = WebsocketController = {
               try {
                 line = encodeForWebsockets(line)
               } catch (err) {
-                logger.err(
-                  {
-                    err,
-                    project_id,
-                    doc_id,
-                    fromVersion,
-                    line,
-                    client_id: client.id
-                  },
-                  'error encoding line uri component'
-                )
+                OError.tag(err, 'error encoding line uri component', { line })
                 return callback(err)
               }
               escapedLines.push(line)
@@ -260,17 +258,9 @@ module.exports = WebsocketController = {
                   }
                 }
               } catch (err) {
-                logger.err(
-                  {
-                    err,
-                    project_id,
-                    doc_id,
-                    fromVersion,
-                    ranges,
-                    client_id: client.id
-                  },
-                  'error encoding range uri component'
-                )
+                OError.tag(err, 'error encoding range uri component', {
+                  ranges
+                })
                 return callback(err)
               }
             }
@@ -366,7 +356,7 @@ module.exports = WebsocketController = {
       cursorData.doc_id,
       function (error) {
         if (error) {
-          logger.warn(
+          logger.info(
             { err: error, client_id: client.id, project_id, user_id },
             "silently ignoring unauthorized updateClientPosition. Client likely hasn't called joinProject yet."
           )
@@ -428,7 +418,7 @@ module.exports = WebsocketController = {
       return callback(null, [])
     }
     if (!project_id) {
-      return callback(new Error('no project_id found on client'))
+      return callback(new NotJoinedError())
     }
     logger.log(
       { user_id, project_id, client_id: client.id },
@@ -463,7 +453,7 @@ module.exports = WebsocketController = {
     // client may have disconnected, but we can submit their update to doc-updater anyways.
     const { user_id, project_id } = client.ol_context
     if (!project_id) {
-      return callback(new Error('no project_id found on client'))
+      return callback(new NotJoinedError())
     }
 
     WebsocketController._assertClientCanApplyUpdate(
@@ -472,10 +462,6 @@ module.exports = WebsocketController = {
       update,
       function (error) {
         if (error) {
-          logger.warn(
-            { err: error, doc_id, client_id: client.id, version: update.v },
-            'client is not authorized to make update'
-          )
           setTimeout(
             () =>
               // Disconnect, but give the client the chance to receive the error
@@ -509,7 +495,7 @@ module.exports = WebsocketController = {
           function (error) {
             if ((error && error.message) === 'update is too large') {
               metrics.inc('update_too_large')
-              const { updateSize } = error
+              const { updateSize } = error.info
               logger.warn(
                 { user_id, project_id, doc_id, updateSize },
                 'update is too large'
@@ -538,16 +524,9 @@ module.exports = WebsocketController = {
             }
 
             if (error) {
-              logger.error(
-                {
-                  err: error,
-                  project_id,
-                  doc_id,
-                  client_id: client.id,
-                  version: update.v
-                },
-                'document was not available for update'
-              )
+              OError.tag(error, 'document was not available for update', {
+                version: update.v
+              })
               client.disconnect()
             }
             callback(error)

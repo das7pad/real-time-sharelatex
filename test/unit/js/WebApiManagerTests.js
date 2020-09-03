@@ -91,6 +91,53 @@ describe('WebApiManager', function () {
       })
     })
 
+    describe('when web replies with a 403', function () {
+      beforeEach(function () {
+        this.request.post = sinon
+          .stub()
+          .callsArgWith(1, null, { statusCode: 403 }, null)
+        this.WebApiManager.joinProject(
+          this.project_id,
+          this.user_id,
+          this.callback
+        )
+      })
+
+      it('should call the callback with an error', function () {
+        this.callback
+          .calledWith(
+            sinon.match({
+              message: 'not authorized'
+            })
+          )
+          .should.equal(true)
+      })
+    })
+
+    describe('when web replies with a 404', function () {
+      beforeEach(function () {
+        this.request.post = sinon
+          .stub()
+          .callsArgWith(1, null, { statusCode: 404 }, null)
+        this.WebApiManager.joinProject(
+          this.project_id,
+          this.user_id,
+          this.callback
+        )
+      })
+
+      it('should call the callback with an error', function () {
+        this.callback
+          .calledWith(
+            sinon.match({
+              message: 'project not found',
+              info: { code: 'ProjectNotFound' }
+            })
+          )
+          .should.equal(true)
+      })
+    })
+
     describe('with an error from web', function () {
       beforeEach(function () {
         this.request.post = sinon
@@ -106,7 +153,10 @@ describe('WebApiManager', function () {
       return it('should call the callback with an error', function () {
         return this.callback
           .calledWith(
-            sinon.match({ message: 'non-success status code from web: 500' })
+            sinon.match({
+              message: 'non-success status code from web',
+              info: { statusCode: 500 }
+            })
           )
           .should.equal(true)
       })
@@ -152,7 +202,9 @@ describe('WebApiManager', function () {
           .calledWith(
             sinon.match({
               message: 'rate-limit hit when joining project',
-              code: 'TooManyRequests'
+              info: {
+                code: 'TooManyRequests'
+              }
             })
           )
           .should.equal(true)
