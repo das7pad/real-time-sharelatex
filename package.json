@@ -19,7 +19,7 @@
     "format:fix": "node_modules/.bin/prettier-eslint $PWD'/**/*.js' --write"
   },
   "dependencies": {
-    "@overleaf/metrics": "https://github.com/das7pad/metrics-sharelatex/archive/19efefa6e1cabc3bbd91bb443712a9624c00ccb4.tar.gz",
+    "@overleaf/metrics": "https://github.com/das7pad/metrics-sharelatex/archive/583d38d6130bc95417d70008c259f832ac835b26.tar.gz",
     "@overleaf/o-error": "^3.0.0",
     "async": "^0.9.0",
     "base64id": "0.1.0",
