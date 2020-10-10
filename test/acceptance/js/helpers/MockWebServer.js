@@ -28,12 +28,13 @@ module.exports = MockWebServer = {
     if (callback == null) {
       callback = function (error, project, privilegeLevel) {}
     }
-    return callback(
-      null,
-      MockWebServer.projects[project_id],
-      MockWebServer.privileges[project_id][user_id] ||
+    let privilege
+    if (MockWebServer.privileges[project_id]) {
+      privilege =
+        MockWebServer.privileges[project_id][user_id] ||
         MockWebServer.privileges[project_id]['anonymous-user']
-    )
+    }
+    callback(null, MockWebServer.projects[project_id], privilege)
   },
 
   joinProjectRequest(req, res, next) {
