@@ -27,67 +27,43 @@ const rclient = redis.createClient(settings.redis.documentupdater)
 const redisSettings = settings.redis
 
 describe('applyOtUpdate', function () {
-  before(function () {
-    return (this.update = {
+  let update
+  before(function resetUpdate() {
+    update = this.update = {
       op: [{ i: 'foo', p: 42 }]
-    })
+    }
   })
   describe('when authorized', function () {
-    before(function (done) {
-      return async.series(
-        [
-          (cb) => {
-            return FixturesManager.setUpProject(
-              {
-                privilegeLevel: 'readAndWrite'
-              },
-              (e, { project_id, user_id }) => {
-                this.project_id = project_id
-                this.user_id = user_id
-                return cb(e)
-              }
-            )
-          },
-
-          (cb) => {
-            return FixturesManager.setUpDoc(
-              this.project_id,
-              { lines: this.lines, version: this.version, ops: this.ops },
-              (e, { doc_id }) => {
-                this.doc_id = doc_id
-                return cb(e)
-              }
-            )
-          },
-
-          (cb) => {
-            this.client = RealTimeClient.connect()
-            return this.client.on('connectionAccepted', cb)
-          },
-
-          (cb) => {
-            return this.client.emit(
-              'joinProject',
-              { project_id: this.project_id },
-              cb
-            )
-          },
-
-          (cb) => {
-            return this.client.emit('joinDoc', this.doc_id, cb)
-          },
-
-          (cb) => {
-            return this.client.emit(
-              'applyOtUpdate',
-              this.doc_id,
-              this.update,
-              cb
-            )
-          }
-        ],
-        done
+    let projectId, docId, client
+    before(function setUpEditorSession(done) {
+      FixturesManager.setUpEditorSession(
+        {
+          privilegeLevel: 'readAndWrite'
+        },
+        (error, { project_id, user_id, doc_id }) => {
+          projectId = this.project_id = project_id
+          docId = this.doc_id = doc_id
+          this.user_id = user_id
+          done(error)
+        }
       )
+    })
+
+    before(function connect(done) {
+      client = this.client = RealTimeClient.connect()
+      client.on('connectionAccepted', done)
+    })
+
+    before(function joinProjectRPC(done) {
+      client.emit('joinProject', { project_id: projectId }, done)
+    })
+
+    before(function joinDocRPC(done) {
+      client.emit('joinDoc', docId, done)
+    })
+
+    before(function sendUpdate(done) {
+      client.emit('applyOtUpdate', docId, update, done)
     })
 
     it('should push the doc into the pending updates list', function (done) {
