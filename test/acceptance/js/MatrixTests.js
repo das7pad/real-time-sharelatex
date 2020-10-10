@@ -57,13 +57,16 @@ const FixturesManager = require('./helpers/FixturesManager')
 const settings = require('settings-sharelatex')
 const Keys = settings.redis.documentupdater.key_schema
 const redis = require('redis-sharelatex')
-const rclient = redis.createClient(settings.redis.pubsub)
+const rclientDocumentUpdater = redis.createClient(
+  settings.redis.documentupdater
+)
+const rclientPubSub = redis.createClient(settings.redis.pubsub)
 
 function getPendingUpdates(doc_id, cb) {
-  rclient.lrange(Keys.pendingUpdates({ doc_id }), 0, 10, cb)
+  rclientDocumentUpdater.lrange(Keys.pendingUpdates({ doc_id }), 0, 10, cb)
 }
 function cleanupPreviousUpdates(doc_id, cb) {
-  rclient.del(Keys.pendingUpdates({ doc_id }), cb)
+  rclientDocumentUpdater.del(Keys.pendingUpdates({ doc_id }), cb)
 }
 
 describe('MatrixTests', function () {
@@ -364,7 +367,7 @@ describe('MatrixTests', function () {
                   privateClient.once('otUpdateApplied', () => {
                     setTimeout(done, 10)
                   })
-                  rclient.publish('applied-ops', JSON.stringify(update))
+                  rclientPubSub.publish('applied-ops', JSON.stringify(update))
                 })
 
                 it('should send nothing to client', function () {
@@ -387,7 +390,7 @@ describe('MatrixTests', function () {
                   privateClient.once('removeEntity', () => {
                     setTimeout(done, 10)
                   })
-                  rclient.publish('editor-events', JSON.stringify(event))
+                  rclientPubSub.publish('editor-events', JSON.stringify(event))
                 })
 
                 it('should send nothing to client', function () {
