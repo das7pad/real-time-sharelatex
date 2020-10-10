@@ -20,8 +20,8 @@ const redis = require('redis-sharelatex')
 const rclient = redis.createClient(settings.redis.pubsub)
 
 describe('PubSubRace', function () {
-  before(function (done) {
-    return MockDocUpdaterServer.run(done)
+  before(function startMockDocUpdaterServer(done) {
+    MockDocUpdaterServer.run(done)
   })
 
   describe('when the client leaves a doc before joinDoc completes', function () {
@@ -184,73 +184,43 @@ describe('PubSubRace', function () {
   })
 
   describe('when the client emits joinDoc and leaveDoc requests frequently and remains in the doc', function () {
-    before(function (done) {
-      return async.series(
-        [
-          (cb) => {
-            return FixturesManager.setUpProject(
-              {
-                privilegeLevel: 'owner',
-                project: {
-                  name: 'Test Project'
-                }
-              },
-              (e, { project_id, user_id }) => {
-                this.project_id = project_id
-                this.user_id = user_id
-                return cb()
-              }
-            )
-          },
-
-          (cb) => {
-            this.clientA = RealTimeClient.connect()
-            return this.clientA.on('connect', cb)
-          },
-
-          (cb) => {
-            return this.clientA.emit(
-              'joinProject',
-              { project_id: this.project_id },
-              (error, project, privilegeLevel, protocolVersion) => {
-                this.project = project
-                this.privilegeLevel = privilegeLevel
-                this.protocolVersion = protocolVersion
-                return cb(error)
-              }
-            )
-          },
-
-          (cb) => {
-            return FixturesManager.setUpDoc(
-              this.project_id,
-              { lines: this.lines, version: this.version, ops: this.ops },
-              (e, { doc_id }) => {
-                this.doc_id = doc_id
-                return cb(e)
-              }
-            )
-          },
-
-          (cb) => {
-            this.clientA.emit('joinDoc', this.doc_id, () => {})
-            this.clientA.emit('leaveDoc', this.doc_id, () => {})
-            this.clientA.emit('joinDoc', this.doc_id, () => {})
-            this.clientA.emit('leaveDoc', this.doc_id, () => {})
-            this.clientA.emit('joinDoc', this.doc_id, () => {})
-            this.clientA.emit('leaveDoc', this.doc_id, () => {})
-            this.clientA.emit('joinDoc', this.doc_id, () => {})
-            this.clientA.emit('leaveDoc', this.doc_id, () => {})
-            return this.clientA.emit('joinDoc', this.doc_id, cb)
-          },
-
-          (cb) => {
-            // wait for subscribe and unsubscribe
-            return setTimeout(cb, 100)
+    let projectId, docId, clientA
+    before(function setUpEditorSession(done) {
+      FixturesManager.setUpEditorSession(
+        {
+          privilegeLevel: 'owner',
+          project: {
+            name: 'Test Project'
           }
-        ],
-        done
+        },
+        (error, { project_id, doc_id }) => {
+          projectId = project_id
+          docId = doc_id
+          done(error)
+        }
       )
+    })
+    before(function connect(done) {
+      clientA = RealTimeClient.connect()
+      clientA.on('connectionAccepted', done)
+    })
+    before(function joinProjectRPC(done) {
+      clientA.emit('joinProject', { project_id: projectId }, done)
+    })
+
+    before(function setUpProject(done) {
+      clientA.emit('joinDoc', docId, () => {})
+      clientA.emit('leaveDoc', docId, () => {})
+      clientA.emit('joinDoc', docId, () => {})
+      clientA.emit('leaveDoc', docId, () => {})
+      clientA.emit('joinDoc', docId, () => {})
+      clientA.emit('leaveDoc', docId, () => {})
+      clientA.emit('joinDoc', docId, () => {})
+      clientA.emit('leaveDoc', docId, () => {})
+      clientA.emit('joinDoc', docId, done)
+    })
+    before(function waitForSubscribeAndUnsubscribe(done) {
+      setTimeout(done, 100)
     })
 
     return it('should subscribe to the applied-ops channels', function (done) {
@@ -258,7 +228,7 @@ describe('PubSubRace', function () {
         if (err) {
           return done(err)
         }
-        resp.should.include(`applied-ops:${this.doc_id}`)
+        resp.should.include(`applied-ops:${docId}`)
         return done()
       })
       return null
