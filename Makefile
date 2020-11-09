@@ -299,4 +299,18 @@ clean_stage_images:
 		$(IMAGE_CI)-dev-deps \
 		$(IMAGE_CI)-dev \
 
+socket.io-client: public.tar.gz
+.PHONY: public.tar.gz
+public.tar.gz:
+	docker run \
+		--rm \
+		--volume $(PWD)/compress.sh:/compress.sh \
+		--workdir /app/node_modules/socket.io-client/dist/ \
+		--user root \
+		--entrypoint sh \
+		$(IMAGE_CI)-prod \
+		-c 'rm *.swf && /compress.sh && tar --create .' \
+	| gzip -9 \
+	> public.tar.gz
+
 .PHONY: clean test test_unit test_acceptance test_clean build
