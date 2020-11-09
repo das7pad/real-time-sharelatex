@@ -236,86 +236,75 @@ describe('PubSubRace', function () {
   })
 
   return describe('when the client disconnects before joinDoc completes', function () {
-    before(function (done) {
-      return async.series(
-        [
-          (cb) => {
-            return FixturesManager.setUpProject(
-              {
-                privilegeLevel: 'owner',
-                project: {
-                  name: 'Test Project'
-                }
-              },
-              (e, { project_id, user_id }) => {
-                this.project_id = project_id
-                this.user_id = user_id
-                return cb()
-              }
-            )
-          },
-
-          (cb) => {
-            this.clientA = RealTimeClient.connect()
-            return this.clientA.on('connect', cb)
-          },
-
-          (cb) => {
-            return this.clientA.emit(
-              'joinProject',
-              { project_id: this.project_id },
-              (error, project, privilegeLevel, protocolVersion) => {
-                this.project = project
-                this.privilegeLevel = privilegeLevel
-                this.protocolVersion = protocolVersion
-                return cb(error)
-              }
-            )
-          },
-
-          (cb) => {
-            return FixturesManager.setUpDoc(
-              this.project_id,
-              { lines: this.lines, version: this.version, ops: this.ops },
-              (e, { doc_id }) => {
-                this.doc_id = doc_id
-                return cb(e)
-              }
-            )
-          },
-
-          (cb) => {
-            let joinDocCompleted = false
-            this.clientA.emit(
-              'joinDoc',
-              this.doc_id,
-              () => (joinDocCompleted = true)
-            )
-            // leave before joinDoc completes
-            return setTimeout(
-              () => {
-                if (joinDocCompleted) {
-                  return cb(new Error('joinDocCompleted -- lower timeout'))
-                }
-                this.clientA.on('disconnect', () => cb())
-                return this.clientA.disconnect()
-              },
-              // socket.io processes joinDoc and disconnect with different delays:
-              //  - joinDoc goes through two process.nextTick
-              //  - disconnect goes through one process.nextTick
-              // We have to inject the disconnect event into a different event loop
-              //  cycle.
-              3
-            )
-          },
-
-          (cb) => {
-            // wait for subscribe and unsubscribe
-            return setTimeout(cb, 100)
+    before(function setUpProject(done) {
+      FixturesManager.setUpProject(
+        {
+          privilegeLevel: 'owner',
+          project: {
+            name: 'Test Project'
           }
-        ],
-        done
+        },
+        (e, { project_id, user_id }) => {
+          this.project_id = project_id
+          this.user_id = user_id
+          done()
+        }
       )
+    })
+
+    before(function setupClient(done) {
+      this.clientA = RealTimeClient.connect()
+      this.clientA.on('connectionAccepted', done)
+    })
+
+    before(function joinProject(done) {
+      this.clientA.emit(
+        'joinProject',
+        { project_id: this.project_id },
+        (error, project, privilegeLevel, protocolVersion) => {
+          this.project = project
+          this.privilegeLevel = privilegeLevel
+          this.protocolVersion = protocolVersion
+          done(error)
+        }
+      )
+    })
+
+    before(function setupDoc(done) {
+      FixturesManager.setUpDoc(
+        this.project_id,
+        { lines: this.lines, version: this.version, ops: this.ops },
+        (e, { doc_id }) => {
+          this.doc_id = doc_id
+          done(e)
+        }
+      )
+    })
+
+    before(function joinDoc(done) {
+      let joinDocCompleted = false
+      this.clientA.emit('joinDoc', this.doc_id, () => (joinDocCompleted = true))
+      // leave before joinDoc completes
+      setTimeout(
+        () => {
+          if (joinDocCompleted) {
+            return done(new Error('joinDocCompleted -- lower timeout'))
+          }
+          this.clientA.on('disconnect', () => done())
+          this.clientA.disconnect()
+        },
+        // socket.io processes joinDoc and disconnect with different delays:
+        //  - joinDoc goes through two process.nextTick
+        //  - disconnect goes through one process.nextTick
+        // We have to inject the disconnect event into a different event loop
+        //  cycle.
+        3
+      )
+    })
+
+    before(function (done) {
+      // wait for subscribe and unsubscribe
+      setTimeout(done, 100)
     })
 
     it('should not subscribe to the editor-events channels anymore', function (done) {
