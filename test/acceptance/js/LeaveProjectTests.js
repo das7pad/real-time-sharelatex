@@ -194,7 +194,7 @@ describe('leaveProject', function () {
 
           (cb) => {
             this.clientA = RealTimeClient.connect()
-            return this.clientA.on('connect', cb)
+            return this.clientA.on('connectionAccepted', cb)
           },
 
           (cb) => {
