@@ -9,7 +9,7 @@ Metrics.event_loop.monitor(logger)
 
 const express = require('express')
 const session = require('express-session')
-const redis = require('redis-sharelatex')
+const redis = require('@overleaf/redis-wrapper')
 
 const sessionRedisClient = redis.createClient(Settings.redis.websessions)
 
@@ -91,7 +91,7 @@ app.get('/debug/events', function (req, res) {
   res.send(`debug mode will log next ${Settings.debugEvents} events`)
 })
 
-const rclient = require('redis-sharelatex').createClient(
+const rclient = require('@overleaf/redis-wrapper').createClient(
   Settings.redis.realtime
 )
 
