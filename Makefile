@@ -38,6 +38,13 @@ export IMAGE_CACHE_HOT ?= $(IMAGE_BRANCH)
 SUFFIX ?=
 export IMAGE_CI ?= ci/$(PROJECT_NAME):$(BRANCH_NAME)-$(BUILD_NUMBER)$(SUFFIX)
 
+# Helper for creating reproducible tartifacts
+REFERENCE_DATE := 2020-01-01T00:00Z
+TAR_FLAGS_REPRODUCIBLE := --sort=name --mtime=$(REFERENCE_DATE)
+TAR_CREATE_REPRODUCIBLE := tar --create $(TAR_FLAGS_REPRODUCIBLE)
+TOUCH_FLAGS_REPRODUCIBLE := -m -d $(REFERENCE_DATE)
+TOUCH_REPRODUCIBLE := touch $(TOUCH_FLAGS_REPRODUCIBLE)
+
 clean_ci: clean
 clean_ci: clean_build
 
@@ -211,14 +218,14 @@ build_prod: clean_build_artifacts
 
 	docker run \
 		--rm \
-		--entrypoint tar \
 		$(IMAGE_CI)-dev \
-			--create \
-			--gzip \
+		$(TAR_CREATE_REPRODUCIBLE) \
 			app.js \
 			app/js \
 			config \
-		> build_artifacts.tar.gz
+	| gzip \
+	> build_artifacts.tar.gz
+	$(TOUCH_REPRODUCIBLE) build_artifacts.tar.gz
 
 	docker build \
 		--force-rm=true \
@@ -309,8 +316,9 @@ public.tar.gz:
 		--user root \
 		--entrypoint sh \
 		$(IMAGE_CI)-prod \
-		-c 'rm *.swf && /compress.sh && tar --create .' \
+		-c 'rm *.swf && /compress.sh && $(TAR_CREATE_REPRODUCIBLE) .' \
 	| gzip -9 \
 	> public.tar.gz
+	$(TOUCH_REPRODUCIBLE) public.tar.gz
 
 .PHONY: clean test test_unit test_acceptance test_clean build
