@@ -319,6 +319,7 @@ public.tar.gz:
 		-c 'rm *.swf && /compress.sh && $(TAR_CREATE_REPRODUCIBLE) .' \
 	| gzip -9 \
 	> public.tar.gz
-	$(TOUCH_REPRODUCIBLE) public.tar.gz
+	sha256sum public.tar.gz | awk '{ print $$1 }' > public.tar.gz.checksum.txt
+	$(TOUCH_REPRODUCIBLE) public.tar.gz public.tar.gz.checksum.txt
 
 .PHONY: clean test test_unit test_acceptance test_clean build

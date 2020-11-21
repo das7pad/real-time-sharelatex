@@ -189,7 +189,7 @@ pipeline {
             stage('archive socket.io-client') {
               steps {
                 sh 'make public.tar.gz'
-                archiveArtifacts(artifacts: 'public.tar.gz')
+                archiveArtifacts(artifacts: 'public.tar.gz*')
               }
               post {
                 cleanup {
