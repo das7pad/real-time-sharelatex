@@ -25,7 +25,7 @@ describe('RoomManager', function () {
     this.client = { namespace: { name: '' }, id: 'first-client' }
     this.RoomManager = SandboxedModule.require(modulePath, {
       requires: {
-        'settings-sharelatex': (this.settings = {}),
+        '@overleaf/settings': (this.settings = {}),
         'logger-sharelatex': (this.logger = {
           log: sinon.stub(),
           warn: sinon.stub(),

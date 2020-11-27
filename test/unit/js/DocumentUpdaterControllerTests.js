@@ -34,7 +34,7 @@ describe('DocumentUpdaterController', function () {
           log: sinon.stub(),
           warn: sinon.stub()
         }),
-        'settings-sharelatex': (this.settings = {
+        '@overleaf/settings': (this.settings = {
           redis: {
             documentupdater: {
               key_schema: {

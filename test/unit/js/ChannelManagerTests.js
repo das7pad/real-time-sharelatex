@@ -22,7 +22,7 @@ describe('ChannelManager', function () {
     this.other_rclient = {}
     return (this.ChannelManager = SandboxedModule.require(modulePath, {
       requires: {
-        'settings-sharelatex': (this.settings = {}),
+        '@overleaf/settings': (this.settings = {}),
         '@overleaf/metrics': (this.metrics = {
           inc: sinon.stub(),
           summary: sinon.stub()

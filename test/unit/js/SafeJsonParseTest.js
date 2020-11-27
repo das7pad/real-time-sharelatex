@@ -21,7 +21,7 @@ describe('SafeJsonParse', function () {
   beforeEach(function () {
     return (this.SafeJsonParse = SandboxedModule.require(modulePath, {
       requires: {
-        'settings-sharelatex': (this.Settings = {
+        '@overleaf/settings': (this.Settings = {
           maxUpdateSize: 16 * 1024
         }),
         'logger-sharelatex': (this.logger = { error: sinon.stub() })
