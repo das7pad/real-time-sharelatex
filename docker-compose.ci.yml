@@ -32,6 +32,8 @@ services:
       REAL_TIME_REDIS_HOST: redis_realtime
       WEB_SESSIONS_REDIS_HOST: redis_websessions
       MOCHA_GREP: ${MOCHA_GREP}
+      NODE_ENV: test
+      NODE_OPTIONS: "--unhandled-rejections=strict --trace-deprecation"
     depends_on:
       - redis_documentupdater
       - redis_pubsub
